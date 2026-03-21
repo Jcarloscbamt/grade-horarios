@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Horario;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -58,6 +59,8 @@ class HorariosCrud extends Component
     public function save(): void
     {
         $this->validate();
+
+        $isNovo = is_null($this->horarioId);
         Horario::updateOrCreate(
             ['id' => $this->horarioId],
             [
@@ -68,6 +71,13 @@ class HorariosCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
+
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Horários',
+            ($isNovo ? 'Novo: ' : 'Editou: ') . $this->hora_inicio
+        );
         session()->flash('success', $this->horarioId ? 'Horário atualizado com sucesso!' : 'Horário cadastrado com sucesso!');
     }
 
@@ -88,6 +98,8 @@ class HorariosCrud extends Component
         $h->delete();
         $this->showDelete = false;
         $this->resetForm();
+        // Log da ação
+        Log::registrar('excluiu', 'Horários', 'Excluiu: ' . $h->nome);
         session()->flash('success', 'Horário excluído com sucesso!');
     }
 

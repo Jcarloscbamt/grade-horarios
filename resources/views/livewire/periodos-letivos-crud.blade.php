@@ -5,9 +5,9 @@
             <h2 class="fw-bold mb-0">Períodos Letivos</h2>
             <small class="text-muted">Calendário acadêmico e datas de avaliação</small>
         </div>
-        @hasrole('admin')
+        @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Novo Período</button>
-        @endhasrole
+        @endhasanyrole
     </div>
 
     @if(session()->has('success'))
@@ -51,7 +51,11 @@
                             @endif
                         </td>
                         <td class="text-center pe-3">
+                            @hasanyrole('admin|coordenador')
+
                             <button wire:click="edit({{ $periodo->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
+
+                            @endhasanyrole
                             @hasrole('admin')
                             <button wire:click="confirmDelete({{ $periodo->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             @endhasrole

@@ -3,7 +3,8 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class TrocarSenha extends Component
 {
@@ -30,25 +31,28 @@ class TrocarSenha extends Component
     {
         $this->validate();
 
-        $user = User::find(auth()->id());
+        $userId = auth()->id();
 
-        if (!$user) {
-            session()->flash('error', 'Usuário não encontrado.');
+        if (!$userId) {
+            $this->addError('password', 'Sessão expirada. Faça login novamente.');
             return;
         }
 
-        $user->password                 = $this->password;
-        $user->password_change_required = false;
-        $user->save();
+        // DB direto — bypassa o cast 'hashed' do Model evitando hash duplo
+        DB::table('users')
+            ->where('id', $userId)
+            ->update([
+                'password'                 => Hash::make($this->password),
+                'password_change_required' => false,
+                'updated_at'               => now(),
+            ]);
 
-        session()->flash('success', 'Senha alterada com sucesso!');
-
-        $this->redirect(route('dashboard'), navigate: false);
+        // Redirect direto sem JS
+        redirect()->route('dashboard');
     }
 
     public function render()
     {
-        // Layout limpo sem navbar — usuário ainda não está "dentro" do sistema
         return view('livewire.trocar-senha')
             ->layout('layouts.guest');
     }

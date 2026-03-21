@@ -5,11 +5,11 @@
             <h2 class="fw-bold mb-0">Cursos</h2>
             <small class="text-muted">Gerenciamento de cursos da instituição</small>
         </div>
-        @hasrole('admin')
+        @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Novo Curso
         </button>
-        @endhasrole
+        @endhasanyrole
     </div>
 
     @if(session()->has('success'))
@@ -22,8 +22,21 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control border-start-0" placeholder="Pesquisar por nome, sigla ou coordenador...">
+                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                    <option value="todos">Todos os campos</option>
+                    <option value="nome">Nome</option>
+                    <option value="sigla">Sigla</option>
+                    <option value="coordenador">Coordenador</option>
+                </select>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                @if($search)
+                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -69,9 +82,11 @@
                                 </div>
                             </td>
                             <td class="text-center pe-3">
+                                @hasanyrole('admin|coordenador')
                                 <button wire:click="edit({{ $curso->id }})" class="btn btn-sm btn-outline-secondary me-1" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $curso->id }})" class="btn btn-sm btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash"></i>
@@ -144,7 +159,12 @@
 
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Telefone</label>
-                            <input type="text" wire:model="telefone_coord" class="form-control" placeholder="(65) 3612-1728">
+                            <input type="text" wire:model="telefone_coord"
+                                class="form-control @error('telefone_coord') is-invalid @enderror"
+                                placeholder="(65) 3612-9966"
+                                maxlength="15">
+                            @error('telefone_coord') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="form-text">Formatação automática ao digitar</div>
                         </div>
 
                         {{-- Cor da Grade --}}

@@ -20,8 +20,23 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control border-start-0" placeholder="Pesquisar por turma, disciplina ou professor...">
+                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                    <option value="todos">Todos os campos</option>
+                    <option value="turma">Turma</option>
+                    <option value="disciplina">Disciplina</option>
+                    <option value="professor">Professor</option>
+                    <option value="sala">Sala</option>
+                    <option value="dia">Dia da semana</option>
+                </select>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                @if($search)
+                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -29,7 +44,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table align-middle mb-0" style="border-collapse:collapse">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th class="ps-3">Dia</th>
@@ -44,32 +59,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb']; @endphp
-                        @forelse($aulas as $i => $aula)
-                        <tr style="{{ $loop->even ? 'background:#f8f9fa' : 'background:#ffffff' }}">
-                            <td class="ps-3">
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">
-                                    {{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}
-                                </span>
-                            </td>
-                            <td class="fw-medium">{{ $aula->turma->nome }}</td>
+                        @php
+                        $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
+                        @endphp
+                        @forelse($aulas as $aula)
+                        <tr>
+                            <td class="ps-3" style="text-transform:uppercase">{{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}</td>
+                            <td style="text-transform:uppercase">{{ $aula->turma->nome }}</td>
                             <td>{{ Str::limit($aula->disciplina->nome, 30) }}</td>
-                            <td>{{ $aula->professor->nome }}</td>
+                            <td style="text-transform:uppercase">{{ $aula->professor->nome }}</td>
                             <td>{{ substr($aula->horario->hora_inicio,0,5) }} – {{ substr($aula->horario->hora_fim,0,5) }}</td>
-                            <td>{{ $aula->sala?->nome ?? '—' }}</td>
-                            <td>
-                                @if($aula->modalidade === 'online')
-                                    <span class="badge bg-warning bg-opacity-10 text-warning-emphasis">Online</span>
-                                @elseif($aula->modalidade === 'híbrido')
-                                    <span class="badge bg-info bg-opacity-10 text-info">Híbrido</span>
-                                @else
-                                    <span class="badge bg-success bg-opacity-10 text-success">Presencial</span>
-                                @endif
-                            </td>
-                            <td>{{ $aula->periodoLetivo->nome }}</td>
+                            <td style="text-transform:uppercase">{{ $aula->sala?->nome ?? '—' }}</td>
+                            <td style="text-transform:uppercase">{{ $aula->modalidade }}</td>
+                            <td style="text-transform:uppercase">{{ $aula->periodoLetivo->nome }}</td>
                             <td class="text-center pe-3">
                                 @hasanyrole('admin|coordenador')
+
                                 <button wire:click="edit({{ $aula->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
+
                                 @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $aula->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -97,64 +104,6 @@
                     <button type="button" class="btn-close" wire:click="closeModal"></button>
                 </div>
                 <div class="modal-body">
-
-                    {{-- Alertas de conflito --}}
-                    @if($errors->any())
-                    <div class="alert alert-danger py-2 mb-3">
-                        <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Não foi possível salvar:</div>
-                        <ul class="mb-0 ps-3">
-                            @foreach($errors->all() as $error)
-                                <li style="font-size:13px">{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-
-                    {{-- Tipo de lançamento — só exibe em inclusão --}}
-                    @if(!$aulaId)
-                    <div class="mb-3 p-3 rounded" style="background:#f8f9fa; border:1px solid #e9ecef">
-                        <label class="form-label fw-medium mb-2">
-                            <i class="bi bi-lightning-charge me-1 text-warning"></i>
-                            Tipo de lançamento
-                        </label>
-                        <div class="d-flex gap-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio"
-                                    wire:model="tipo_lancamento"
-                                    wire:change="$set('tipo_lancamento', 'unico')"
-                                    value="unico" id="lancUnico"
-                                    {{ $tipo_lancamento === 'unico' ? 'checked' : '' }}>
-                                <label class="form-check-label" for="lancUnico">
-                                    <strong>Horário específico</strong>
-                                    <small class="d-block text-muted">Selecionar um horário manualmente</small>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio"
-                                    wire:model="tipo_lancamento"
-                                    wire:change="$set('tipo_lancamento', 'todos_horarios')"
-                                    value="todos_horarios" id="lancTodos"
-                                    {{ $tipo_lancamento === 'todos_horarios' ? 'checked' : '' }}>
-                                <label class="form-check-label" for="lancTodos">
-                                    <strong>Todos os horários do dia</strong>
-                                    <small class="d-block text-muted">Cria automaticamente para todos os blocos</small>
-                                </label>
-                            </div>
-                        </div>
-
-                        {{-- Aviso quando selecionar todos os horários --}}
-                        @if($tipo_lancamento === 'todos_horarios')
-                        <div class="mt-2 p-2 rounded" style="background:#fff3cd; border:1px solid #ffc107">
-                            <small style="color:#856404">
-                                <i class="bi bi-info-circle me-1"></i>
-                                O sistema criará uma aula para <strong>cada bloco de horário</strong> cadastrado
-                                (aulas e intervalo). Horários que já tiverem conflito serão ignorados com aviso.
-                            </small>
-                        </div>
-                        @endif
-                    </div>
-                    @endif
-
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Turma <span class="text-danger">*</span></label>
@@ -198,39 +147,21 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Sala</label>
-                            <select wire:model="sala_id" class="form-select @error('sala_id') is-invalid @enderror">
+                            <select wire:model="sala_id" class="form-select">
                                 <option value="">Online / Sem sala</option>
                                 @foreach($salas as $sala)
                                 <option value="{{ $sala->id }}">{{ $sala->nome }}</option>
                                 @endforeach
                             </select>
-                            @error('sala_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-
-                        {{-- Horário — sempre visível, desabilitado quando for "todos os horários" --}}
                         <div class="col-md-4">
-                            <label class="form-label fw-medium">
-                                Horário
-                                @if($tipo_lancamento === 'unico' || $aulaId)
-                                    <span class="text-danger">*</span>
-                                @else
-                                    <small class="text-muted fw-normal">(automático)</small>
-                                @endif
-                            </label>
-                            <select wire:model="horario_id"
-                                class="form-select @error('horario_id') is-invalid @enderror"
-                                {{ ($tipo_lancamento === 'todos_horarios' && !$aulaId) ? 'disabled' : '' }}>
+                            <label class="form-label fw-medium">Horário <span class="text-danger">*</span></label>
+                            <select wire:model="horario_id" class="form-select @error('horario_id') is-invalid @enderror">
                                 <option value="">Selecione...</option>
                                 @foreach($horarios as $horario)
-                                <option value="{{ $horario->id }}">
-                                    {{ substr($horario->hora_inicio,0,5) }} – {{ substr($horario->hora_fim,0,5) }}
-                                    ({{ $horario->tipo }})
-                                </option>
+                                <option value="{{ $horario->id }}">{{ substr($horario->hora_inicio,0,5) }} – {{ substr($horario->hora_fim,0,5) }} ({{ $horario->tipo }})</option>
                                 @endforeach
                             </select>
-                            @if($tipo_lancamento === 'todos_horarios' && !$aulaId)
-                                <small class="text-muted">Todos os blocos serão gerados automaticamente</small>
-                            @endif
                             @error('horario_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">
@@ -238,7 +169,7 @@
                             <select wire:model="dia_semana" class="form-select @error('dia_semana') is-invalid @enderror">
                                 <option value="">Selecione...</option>
                                 @foreach($dias as $num => $nome)
-                                <option value="{{ $num }}">{{ $nome }}</option>
+                                <option value="{{ $num }}">{{ $nome }}feira</option>
                                 @endforeach
                             </select>
                             @error('dia_semana') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -257,12 +188,7 @@
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-light" wire:click="closeModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" wire:click="save" wire:loading.attr="disabled">
-                        <span wire:loading wire:target="save" class="spinner-border spinner-border-sm me-1"></span>
-                        @if($tipo_lancamento === 'todos_horarios' && !$aulaId)
-                            <i class="bi bi-lightning-charge me-1"></i>Gerar todos os horários
-                        @else
-                            Salvar
-                        @endif
+                        <span wire:loading wire:target="save" class="spinner-border spinner-border-sm me-1"></span>Salvar
                     </button>
                 </div>
             </div>

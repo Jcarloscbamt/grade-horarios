@@ -5,9 +5,9 @@
             <h2 class="fw-bold mb-0">Salas</h2>
             <small class="text-muted">Gerenciamento de salas e laboratórios</small>
         </div>
-        @hasrole('admin')
+        @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Sala</button>
-        @endhasrole
+        @endhasanyrole
     </div>
 
     @if(session()->has('success'))
@@ -20,8 +20,21 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control border-start-0" placeholder="Pesquisar por nome, tipo ou bloco...">
+                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                    <option value="todos">Todos os campos</option>
+                    <option value="nome">Nome</option>
+                    <option value="tipo">Tipo</option>
+                    <option value="bloco">Bloco</option>
+                </select>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                @if($search)
+                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -42,12 +55,16 @@
                     <tbody>
                         @forelse($salas as $sala)
                         <tr>
-                            <td class="ps-3 fw-medium">{{ $sala->nome }}</td>
-                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $sala->tipo }}</span></td>
+                            <td class="ps-3">{{ $sala->nome }}</td>
+                            <td style="text-transform:uppercase">{{ $sala->tipo }}</td>
                             <td>{{ $sala->bloco ?? '—' }}</td>
-                            <td>{{ $sala->capacidade ? $sala->capacidade . ' alunos' : '—' }}</td>
+                            <td style="text-transform:uppercase">{{ $sala->capacidade ? $sala->capacidade . ' alunos' : '—' }}</td>
                             <td class="text-center pe-3">
+                                @hasanyrole('admin|coordenador')
+
                                 <button wire:click="edit({{ $sala->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
+
+                                @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $sala->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                 @endhasrole

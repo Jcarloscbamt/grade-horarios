@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\PeriodoLetivo;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -72,6 +73,8 @@ class PeriodosLetivosCrud extends Component
     {
         $this->validate();
 
+
+        $isNovo = is_null($this->periodoId);
         // Se ativo, desativa todos os outros
         if ($this->ativo) {
             PeriodoLetivo::where('id', '!=', $this->periodoId ?? 0)->update(['ativo' => false]);
@@ -92,7 +95,13 @@ class PeriodosLetivosCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
-        session()->flash('success', $this->periodoId ? 'Período letivo atualizado com sucesso!' : 'Período letivo cadastrado com sucesso!');
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Períodos',
+            ($isNovo ? 'Novo período: ' : 'Editou período: ') . $this->nome
+        );
+        session()->flash('success', $isNovo ? 'Período letivo cadastrado com sucesso!' : 'Período letivo atualizado com sucesso!');
     }
 
     public function confirmDelete(int $id): void
@@ -112,6 +121,8 @@ class PeriodosLetivosCrud extends Component
         $p->delete();
         $this->showDelete = false;
         $this->resetForm();
+        // Log da ação
+        Log::registrar('excluiu', 'Períodos', 'Excluiu período: ' . $p->nome);
         session()->flash('success', 'Período letivo excluído com sucesso!');
     }
 

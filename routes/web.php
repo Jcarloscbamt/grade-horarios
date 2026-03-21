@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GradeImpressaoController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TrocarSenhaController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,7 +21,10 @@ Route::middleware('auth')->group(function () {
 
 // Troca de senha obrigatória
 Route::middleware(['auth'])->group(function () {
-    Route::get('/trocar-senha', \App\Livewire\TrocarSenha::class)->name('password.change');
+    Route::get('/trocar-senha',  [TrocarSenhaController::class, 'show'])
+        ->name('password.change');
+    Route::post('/trocar-senha', [TrocarSenhaController::class, 'update'])
+        ->name('password.change.update');
 });
 
 // Rotas do sistema
@@ -35,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/periodos',    \App\Livewire\PeriodosLetivosCrud::class)->name('periodos');
     Route::get('/aulas',       \App\Livewire\AulasCrud::class)->name('aulas');
     Route::get('/usuarios',    \App\Livewire\UsuariosCrud::class)->middleware('role:admin')->name('usuarios');
+    Route::get('/logs',        \App\Livewire\LogsCrud::class)->middleware('role:admin')->name('logs');
 
     // Página de impressão da grade
     Route::get('/grade/imprimir', GradeImpressaoController::class)->name('grade.imprimir');

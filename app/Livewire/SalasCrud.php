@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Sala;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -18,7 +19,8 @@ class SalasCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search   = '';
+    public string $search  = '';
+    public string $filtro  = 'todos';
     public string $modalTitle = '';
 
     public array $tipos = ['Sala de Aula', 'Laboratório', 'Auditório', 'Sala de Reunião'];
@@ -61,6 +63,8 @@ class SalasCrud extends Component
     public function save(): void
     {
         $this->validate();
+
+        $isNovo = is_null($this->salaId);
         Sala::updateOrCreate(
             ['id' => $this->salaId],
             [
@@ -72,6 +76,14 @@ class SalasCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
+
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Salas',
+            ($isNovo ? 'Novo: ' : 'Editou: ') . $this->nome
+        );
+        
         session()->flash('success', $this->salaId ? 'Sala atualizada com sucesso!' : 'Sala cadastrada com sucesso!');
     }
 
@@ -92,6 +104,8 @@ class SalasCrud extends Component
         $s->delete();
         $this->showDelete = false;
         $this->resetForm();
+        // Log da ação
+        Log::registrar('excluiu', 'Salas', 'Excluiu: ' . $s->nome);
         session()->flash('success', 'Sala excluída com sucesso!');
     }
 
@@ -110,15 +124,22 @@ class SalasCrud extends Component
     }
 
     public function updatingSearch(): void { $this->resetPage(); }
+    public function updatingFiltro(): void  { $this->resetPage(); $this->search = ''; }
 
     public function render()
     {
         $salas = Sala::query()
-            ->when($this->search, fn($q) =>
-                $q->where('nome', 'like', "%{$this->search}%")
-                  ->orWhere('tipo', 'like', "%{$this->search}%")
-                  ->orWhere('bloco', 'like', "%{$this->search}%")
-            )
+            ->when($this->search, function($q) {
+                $s = $this->search;
+                match($this->filtro) {
+                    'nome'  => $q->where('nome', 'like', "%$s%"),
+                    'tipo'  => $q->where('tipo', 'like', "%$s%"),
+                    'bloco' => $q->where('bloco', 'like', "%$s%"),
+                    default => $q->where('nome', 'like', "%$s%")
+                                 ->orWhere('tipo', 'like', "%$s%")
+                                 ->orWhere('bloco', 'like', "%$s%"),
+                };
+            })
             ->orderBy('nome')
             ->paginate(10);
 

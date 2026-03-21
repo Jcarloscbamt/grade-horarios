@@ -5,9 +5,9 @@
             <h2 class="fw-bold mb-0">Professores</h2>
             <small class="text-muted">Gerenciamento de professores</small>
         </div>
-        @hasrole('admin')
+        @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Novo Professor</button>
-        @endhasrole
+        @endhasanyrole
     </div>
 
     @if(session()->has('success'))
@@ -20,8 +20,22 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control border-start-0" placeholder="Pesquisar por nome ou e-mail...">
+                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                    <option value="todos">Todos os campos</option>
+                    <option value="nome">Nome</option>
+                    <option value="email">E-mail</option>
+                    <option value="cpf">CPF</option>
+                    <option value="telefone">Telefone</option>
+                </select>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                @if($search)
+                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -45,9 +59,21 @@
                             <td class="ps-3 fw-medium">{{ $professor->nome }}</td>
                             <td>{{ $professor->email }}</td>
                             <td>{{ $professor->telefone ?? '—' }}</td>
-                            <td>{{ substr($professor->cpf,0,3).'.'.substr($professor->cpf,3,3).'.'.substr($professor->cpf,6,3).'-'.substr($professor->cpf,9,2) }}</td>
+                            <td>
+                                @php
+                                    $cpfLimpo = preg_replace('/\D/', '', $professor->cpf);
+                                    $cpfFmt = strlen($cpfLimpo) === 11
+                                        ? substr($cpfLimpo,0,3).'.'.substr($cpfLimpo,3,3).'.'.substr($cpfLimpo,6,3).'-'.substr($cpfLimpo,9,2)
+                                        : $professor->cpf;
+                                @endphp
+                                {{ $cpfFmt }}
+                            </td>
                             <td class="text-center pe-3">
+                                @hasanyrole('admin|coordenador')
+
                                 <button wire:click="edit({{ $professor->id }})" class="btn btn-sm btn-outline-secondary me-1" title="Editar"><i class="bi bi-pencil"></i></button>
+
+                                @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $professor->id }})" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></button>
                                 @endhasrole
@@ -82,8 +108,22 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">CPF <span class="text-danger">*</span></label>
-                            <input type="text" wire:model="cpf" class="form-control @error('cpf') is-invalid @enderror" placeholder="Somente números" maxlength="11">
-                            @error('cpf') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <input type="text"
+                                wire:model.live="cpf"
+                                class="form-control @error('cpf') is-invalid @enderror"
+                                placeholder="000.000.000-00"
+                                maxlength="14"
+                                style="font-family:monospace">
+                            @error('cpf')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @else
+                                @if(strlen(preg_replace('/\D/', '', $cpf)) === 11)
+                                    <div class="text-success mt-1" style="font-size:12px">
+                                        <i class="bi bi-check-circle me-1"></i>CPF válido
+                                    </div>
+                                @endif
+                            @enderror
+                            <div class="form-text">Formatação automática ao digitar</div>
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-medium">E-mail <span class="text-danger">*</span></label>
@@ -92,7 +132,14 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Telefone</label>
-                            <input type="text" wire:model="telefone" class="form-control" placeholder="(65) 99999-9999">
+                            <input type="text"
+                                wire:model.live="telefone"
+                                class="form-control @error('telefone') is-invalid @enderror"
+                                placeholder="(65) 98119-0328"
+                                maxlength="15"
+                                style="font-family:monospace">
+                            @error('telefone') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="form-text">Formatação automática ao digitar</div>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Curso;
 use App\Models\Turma;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -20,7 +21,8 @@ class TurmasCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search   = '';
+    public string $search  = '';
+    public string $filtro  = 'todos';
     public string $modalTitle = '';
 
     protected function rules(): array
@@ -66,6 +68,8 @@ class TurmasCrud extends Component
     public function save(): void
     {
         $this->validate();
+
+        $isNovo = is_null($this->turmaId);
         Turma::updateOrCreate(
             ['id' => $this->turmaId],
             [
@@ -78,6 +82,13 @@ class TurmasCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
+
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Turmas',
+            ($isNovo ? 'Novo: ' : 'Editou: ') . $this->nome
+        );
         session()->flash('success', $this->turmaId ? 'Turma atualizada com sucesso!' : 'Turma cadastrada com sucesso!');
     }
 
@@ -98,6 +109,8 @@ class TurmasCrud extends Component
         $t->delete();
         $this->showDelete = false;
         $this->resetForm();
+        // Log da ação
+        Log::registrar('excluiu', 'Turmas', 'Excluiu: ' . $t->nome);
         session()->flash('success', 'Turma excluída com sucesso!');
     }
 
@@ -116,14 +129,22 @@ class TurmasCrud extends Component
     }
 
     public function updatingSearch(): void { $this->resetPage(); }
+    public function updatingFiltro(): void  { $this->resetPage(); $this->search = ''; }
 
     public function render()
     {
         $turmas = Turma::with('curso')
-            ->when($this->search, fn($q) =>
-                $q->where('nome', 'like', "%{$this->search}%")
-                  ->orWhereHas('curso', fn($q) => $q->where('nome', 'like', "%{$this->search}%"))
-            )
+            ->when($this->search, function($q) {
+                $s = $this->search;
+                match($this->filtro) {
+                    'nome'     => $q->where('nome', 'like', "%$s%"),
+                    'curso'    => $q->whereHas('curso', fn($c) => $c->where('nome', 'like', "%$s%")->orWhere('sigla', 'like', "%$s%")),
+                    'semestre' => $q->where('semestre', 'like', "%$s%"),
+                    'periodo'  => $q->where('periodo', 'like', "%$s%"),
+                    default    => $q->where('nome', 'like', "%$s%")
+                                    ->orWhereHas('curso', fn($c) => $c->where('nome', 'like', "%$s%")),
+                };
+            })
             ->orderByDesc('ano')->orderBy('nome')
             ->paginate(10);
 

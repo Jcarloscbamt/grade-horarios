@@ -64,7 +64,7 @@
     }
 </style>
 
-<nav class="navbar navbar-expand-lg navbar-unisenai px-3">
+<nav class="navbar navbar-expand-md navbar-unisenai px-3">
 
     {{-- Logo UniSENAI --}}
     <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('grade') }}">
@@ -133,6 +133,10 @@
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item {{ request()->routeIs('horarios') ? 'active' : '' }}" href="{{ route('horarios') }}"><i class="bi bi-clock me-2" style="color:#E30613"></i>Horários</a></li>
                     <li><a class="dropdown-item {{ request()->routeIs('periodos') ? 'active' : '' }}" href="{{ route('periodos') }}"><i class="bi bi-calendar3 me-2" style="color:#E30613"></i>Períodos Letivos</a></li>
+                    @hasrole('admin')
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item {{ request()->routeIs('logs') ? 'active' : '' }}" href="{{ route('logs') }}"><i class="bi bi-journal-text me-2" style="color:#E30613"></i>Log de Alterações</a></li>
+                    @endhasrole
                 </ul>
             </li>
 

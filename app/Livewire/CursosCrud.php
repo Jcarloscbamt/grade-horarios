@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Curso;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -17,16 +18,16 @@ class CursosCrud extends Component
     public string $coordenador   = '';
     public string $email_coord   = '';
     public string $telefone_coord = '';
-    public string $cor_grade     = '#E30613'; // padrão vermelho UniSENAI
+    public string $cor_grade     = '#E30613';
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search   = '';
+    public string $search  = '';
+    public string $filtro  = 'todos';
     public string $modalTitle = '';
 
     public array $niveis = ['Tecnólogo', 'Bacharelado', 'Licenciatura', 'Técnico'];
 
-    // Sugestões de cores para facilitar
     public array $coresSugeridas = [
         '#E30613' => 'Vermelho UniSENAI',
         '#1565C0' => 'Azul',
@@ -38,7 +39,7 @@ class CursosCrud extends Component
         '#37474F' => 'Cinza escuro',
     ];
 
-    protected $queryString = ['search'];
+    protected $queryString = ['search', 'filtro'];
 
     protected function rules(): array
     {
@@ -48,7 +49,7 @@ class CursosCrud extends Component
             'nivel'          => 'required',
             'coordenador'    => 'required|min:3|max:100',
             'email_coord'    => 'required|email|max:100',
-            'telefone_coord' => 'nullable|max:20',
+            'telefone_coord' => 'nullable|min:13|max:15',
             'cor_grade'      => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
@@ -64,7 +65,22 @@ class CursosCrud extends Component
         'email_coord.email'    => 'Informe um e-mail válido.',
         'cor_grade.required'   => 'Informe uma cor para a grade.',
         'cor_grade.regex'      => 'A cor deve estar no formato hexadecimal. Ex: #E30613',
+        'telefone_coord.min'   => 'Telefone incompleto. Use o formato (00) 0000-0000.',
     ];
+
+    private function formatarTelefone(string $tel): string
+    {
+        $tel = preg_replace('/\D/', '', $tel);
+        if (strlen($tel) <= 2)  return $tel ? '(' . $tel : $tel;
+        if (strlen($tel) <= 6)  return '(' . substr($tel,0,2) . ') ' . substr($tel,2);
+        if (strlen($tel) <= 10) return '(' . substr($tel,0,2) . ') ' . substr($tel,2,4) . '-' . substr($tel,6);
+        return '(' . substr($tel,0,2) . ') ' . substr($tel,2,5) . '-' . substr($tel,7,4);
+    }
+
+    public function updatedTelefoneCoord(string $value): void
+    {
+        $this->telefone_coord = $this->formatarTelefone($value);
+    }
 
     public function create(): void
     {
@@ -92,6 +108,8 @@ class CursosCrud extends Component
     {
         $this->validate();
 
+        $isNovo = is_null($this->cursoId);
+
         Curso::updateOrCreate(
             ['id' => $this->cursoId],
             [
@@ -105,9 +123,16 @@ class CursosCrud extends Component
             ]
         );
 
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Cursos',
+            ($isNovo ? 'Novo curso: ' : 'Editou curso: ') . $this->nome
+        );
+
         $this->showModal = false;
         $this->resetForm();
-        session()->flash('success', $this->cursoId ? 'Curso atualizado com sucesso!' : 'Curso cadastrado com sucesso!');
+        session()->flash('success', $isNovo ? 'Curso cadastrado com sucesso!' : 'Curso atualizado com sucesso!');
     }
 
     public function confirmDelete(int $id): void
@@ -119,12 +144,19 @@ class CursosCrud extends Component
     public function delete(): void
     {
         $curso = Curso::findOrFail($this->cursoId);
+
         if ($curso->turmas()->count() > 0 || $curso->disciplinas()->count() > 0) {
             session()->flash('error', 'Não é possível excluir pois este curso possui turmas ou disciplinas vinculadas.');
             $this->showDelete = false;
             return;
         }
+
+        $nome = $curso->nome;
         $curso->delete();
+
+        // Log da ação
+        Log::registrar('excluiu', 'Cursos', "Excluiu curso: {$nome}");
+
         $this->showDelete = false;
         $this->resetForm();
         session()->flash('success', 'Curso excluído com sucesso!');
@@ -151,15 +183,22 @@ class CursosCrud extends Component
     }
 
     public function updatingSearch(): void { $this->resetPage(); }
+    public function updatingFiltro(): void  { $this->resetPage(); $this->search = ''; }
 
     public function render()
     {
         $cursos = Curso::query()
-            ->when($this->search, fn($q) =>
-                $q->where('nome', 'like', "%{$this->search}%")
-                  ->orWhere('sigla', 'like', "%{$this->search}%")
-                  ->orWhere('coordenador', 'like', "%{$this->search}%")
-            )
+            ->when($this->search, function($q) {
+                $s = $this->search;
+                match($this->filtro) {
+                    'nome'        => $q->where('nome', 'like', "%$s%"),
+                    'sigla'       => $q->where('sigla', 'like', "%$s%"),
+                    'coordenador' => $q->where('coordenador', 'like', "%$s%"),
+                    default       => $q->where('nome', 'like', "%$s%")
+                                       ->orWhere('sigla', 'like', "%$s%")
+                                       ->orWhere('coordenador', 'like', "%$s%"),
+                };
+            })
             ->orderBy('nome')
             ->paginate(10);
 

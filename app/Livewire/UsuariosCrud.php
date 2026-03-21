@@ -3,8 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\User;
+use App\Models\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 class UsuariosCrud extends Component
@@ -22,9 +24,6 @@ class UsuariosCrud extends Component
     public string $search   = '';
     public string $modalTitle = '';
 
-    // Evita reset de paginação ao abrir/fechar modal
-    protected $queryString = ['search'];
-
     protected function rules(): array
     {
         $passwordRule = $this->usuarioId
@@ -35,7 +34,7 @@ class UsuariosCrud extends Component
             'name'     => 'required|min:3|max:100',
             'email'    => 'required|email|max:100|unique:users,email,' . ($this->usuarioId ?? 'NULL'),
             'password' => $passwordRule,
-            'role'     => 'required|in:admin,coordenador,consulta',
+            'role'     => 'required|in:admin,coordenador',
         ];
     }
 
@@ -57,13 +56,12 @@ class UsuariosCrud extends Component
 
     public function edit(int $id): void
     {
-        // Busca o usuário SEM resetar a paginação
         $user = User::findOrFail($id);
-        $this->usuarioId  = $user->id;
-        $this->name       = $user->name;
-        $this->email      = $user->email;
-        $this->password   = '';
-        $this->role       = $user->getRoleNames()->first() ?? '';
+        $this->usuarioId = $user->id;
+        $this->name      = $user->name;
+        $this->email     = $user->email;
+        $this->password  = '';
+        $this->role      = $user->getRoleNames()->first() ?? '';
         $this->modalTitle = 'Editar Usuário';
         $this->showModal  = true;
     }
@@ -72,8 +70,6 @@ class UsuariosCrud extends Component
     {
         $this->validate();
 
-        $isNovo = !$this->usuarioId;
-
         $data = [
             'name'  => $this->name,
             'email' => $this->email,
@@ -81,30 +77,28 @@ class UsuariosCrud extends Component
 
         if ($this->password) {
             $data['password'] = Hash::make($this->password);
-            if ($isNovo || $this->usuarioId !== auth()->id()) {
-                $data['password_change_required'] = true;
-            }
         }
 
-        if ($isNovo) {
-            $data['password_change_required'] = true;
-        }
-
+        $isNovo = is_null($this->usuarioId);
         $user = User::updateOrCreate(['id' => $this->usuarioId], $data);
+
+        // Atualiza o perfil
         $user->syncRoles([$this->role]);
 
-        // Fecha modal e limpa form SEM resetar paginação
         $this->showModal = false;
         $this->resetForm();
-
-        session()->flash('success', $isNovo
-            ? 'Usuário cadastrado! Ele será solicitado a trocar a senha no primeiro login.'
-            : 'Usuário atualizado com sucesso!'
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Usuários',
+            ($isNovo ? 'Novo usuário: ' : 'Editou usuário: ') . $this->name
         );
+        session()->flash('success', $isNovo ? 'Usuário cadastrado com sucesso!' : 'Usuário atualizado com sucesso!');
     }
 
     public function confirmDelete(int $id): void
     {
+        // Impede que o admin exclua a si mesmo
         if ($id === auth()->id()) {
             session()->flash('error', 'Você não pode excluir seu próprio usuário.');
             return;
@@ -118,6 +112,8 @@ class UsuariosCrud extends Component
         User::findOrFail($this->usuarioId)->delete();
         $this->showDelete = false;
         $this->resetForm();
+        // Log da ação
+        Log::registrar('excluiu', 'Usuários', 'Excluiu usuário: ' . $u->name);
         session()->flash('success', 'Usuário excluído com sucesso!');
     }
 
@@ -131,18 +127,11 @@ class UsuariosCrud extends Component
     private function resetForm(): void
     {
         $this->usuarioId = null;
-        $this->name      = '';
-        $this->email     = '';
-        $this->password  = '';
-        $this->role      = '';
+        $this->name = $this->email = $this->password = $this->role = '';
         $this->resetValidation();
     }
 
-    // Só reseta página ao pesquisar — não ao abrir modal
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
+    public function updatingSearch(): void { $this->resetPage(); }
 
     public function render()
     {
@@ -154,6 +143,8 @@ class UsuariosCrud extends Component
             ->orderBy('name')
             ->paginate(10);
 
-        return view('livewire.usuarios-crud', compact('usuarios'));
+        $roles = Role::orderBy('name')->get();
+
+        return view('livewire.usuarios-crud', compact('usuarios', 'roles'));
     }
 }
