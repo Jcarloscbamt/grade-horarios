@@ -104,6 +104,20 @@
                     <button type="button" class="btn-close" wire:click="closeModal"></button>
                 </div>
                 <div class="modal-body">
+
+                    {{-- Alerta de erros de conflito/duplicidade --}}
+                    @if($errors->has('geral'))
+                    <div class="alert alert-danger py-2 mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Não foi possível salvar:</strong>
+                        <ul class="mb-0 mt-1 ps-3">
+                            @foreach($errors->get('geral') as $erro)
+                                <li style="font-size:13px">{{ $erro }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Turma <span class="text-danger">*</span></label>
@@ -154,13 +168,37 @@
                                 @endforeach
                             </select>
                         </div>
+
+                        {{-- Opção cadastrar todos os horários do dia --}}
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox"
+                                       wire:model.live="todosHorarios"
+                                       id="todosHorarios" role="switch">
+                                <label class="form-check-label fw-medium" for="todosHorarios">
+                                    <i class="bi bi-calendar-week me-1" style="color:#E30613"></i>
+                                    Cadastrar em todos os horários do dia de uma vez
+                                </label>
+                            </div>
+                            @if($todosHorarios)
+                            <div class="mt-2 p-2 rounded" style="background:#fff3cd;font-size:13px">
+                                <i class="bi bi-info-circle me-1" style="color:#856404"></i>
+                                Serão criadas aulas em <strong>todos os horários</strong> cadastrados (exceto intervalos) para o dia selecionado.
+                            </div>
+                            @endif
+                        </div>
+
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Horário <span class="text-danger">*</span></label>
-                            <select wire:model="horario_id" class="form-select @error('horario_id') is-invalid @enderror">
-                                <option value="">Selecione...</option>
+                            <select wire:model="horario_id"
+                                    class="form-select @error('horario_id') is-invalid @enderror"
+                                    {{ $todosHorarios ? 'disabled' : '' }}>
+                                <option value="">{{ $todosHorarios ? 'Todos os horários' : 'Selecione...' }}</option>
+                                @if(!$todosHorarios)
                                 @foreach($horarios as $horario)
                                 <option value="{{ $horario->id }}">{{ substr($horario->hora_inicio,0,5) }} – {{ substr($horario->hora_fim,0,5) }} ({{ $horario->tipo }})</option>
                                 @endforeach
+                                @endif
                             </select>
                             @error('horario_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -169,7 +207,7 @@
                             <select wire:model="dia_semana" class="form-select @error('dia_semana') is-invalid @enderror">
                                 <option value="">Selecione...</option>
                                 @foreach($dias as $num => $nome)
-                                <option value="{{ $num }}">{{ $nome }}feira</option>
+                                <option value="{{ $num }}">{{ $nome }}</option>
                                 @endforeach
                             </select>
                             @error('dia_semana') <div class="invalid-feedback">{{ $message }}</div> @enderror

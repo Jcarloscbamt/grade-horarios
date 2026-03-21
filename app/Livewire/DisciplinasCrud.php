@@ -12,7 +12,7 @@ class DisciplinasCrud extends Component
 {
     use WithPagination;
 
-    public ?int $disciplinaId   = null;
+    public ?int $disciplinaId    = null;
     public string $curso_id      = '';
     public string $nome          = '';
     public string $carga_horaria = '';
@@ -20,25 +20,31 @@ class DisciplinasCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search  = '';
-    public string $filtro  = 'todos';
+    public string $search   = '';
+    public string $filtro   = 'todos';
     public string $modalTitle = '';
 
     protected function rules(): array
     {
         return [
-            'curso_id'      => 'required|exists:cursos,id',
-            'nome'          => 'required|min:3|max:100',
-            'carga_horaria' => 'required|integer|min:1',
-            'semestre_grade'=> 'required|integer|min:1|max:10',
+            'curso_id'       => 'required|exists:cursos,id',
+            'nome'           => 'required|min:3|max:100',
+            'carga_horaria'  => 'required|integer|min:1',
+            'semestre_grade' => 'required|integer|min:1|max:10',
         ];
     }
 
     protected array $messages = [
         'curso_id.required'       => 'Selecione um curso.',
         'nome.required'           => 'O nome da disciplina é obrigatório.',
+        'nome.min'                => 'O nome deve ter no mínimo 3 caracteres.',
         'carga_horaria.required'  => 'A carga horária é obrigatória.',
+        'carga_horaria.integer'   => 'A carga horária deve ser um número.',
+        'carga_horaria.min'       => 'A carga horária deve ser maior que zero.',
         'semestre_grade.required' => 'O semestre é obrigatório.',
+        'semestre_grade.integer'  => 'O semestre deve ser um número.',
+        'semestre_grade.min'      => 'O semestre deve ser no mínimo 1.',
+        'semestre_grade.max'      => 'O semestre deve ser no máximo 10.',
     ];
 
     public function create(): void
@@ -64,26 +70,39 @@ class DisciplinasCrud extends Component
     {
         $this->validate();
 
+        // Verificar duplicidade: mesmo nome + mesmo curso
+        $duplicada = Disciplina::where('curso_id', $this->curso_id)
+            ->whereRaw('LOWER(nome) = ?', [strtolower(trim($this->nome))])
+            ->when($this->disciplinaId, fn($q) => $q->where('id', '!=', $this->disciplinaId))
+            ->exists();
+
+        if ($duplicada) {
+            $this->addError('nome', 'Já existe uma disciplina com este nome neste curso.');
+            return;
+        }
+
         $isNovo = is_null($this->disciplinaId);
+
         Disciplina::updateOrCreate(
             ['id' => $this->disciplinaId],
             [
-                'curso_id'      => $this->curso_id,
-                'nome'          => $this->nome,
-                'carga_horaria' => $this->carga_horaria,
-                'semestre_grade'=> $this->semestre_grade,
+                'curso_id'       => $this->curso_id,
+                'nome'           => trim($this->nome),
+                'carga_horaria'  => $this->carga_horaria,
+                'semestre_grade' => $this->semestre_grade,
             ]
         );
-        $this->showModal = false;
-        $this->resetForm();
 
-        // Log da ação
+        // Log
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
             'Disciplinas',
-            ($isNovo ? 'Novo: ' : 'Editou: ') . $this->nome
+            ($isNovo ? 'Nova disciplina: ' : 'Editou disciplina: ') . $this->nome
         );
-        session()->flash('success', $this->disciplinaId ? 'Disciplina atualizada com sucesso!' : 'Disciplina cadastrada com sucesso!');
+
+        $this->showModal = false;
+        $this->resetForm();
+        session()->flash('success', $isNovo ? 'Disciplina cadastrada com sucesso!' : 'Disciplina atualizada com sucesso!');
     }
 
     public function confirmDelete(int $id): void
@@ -95,16 +114,21 @@ class DisciplinasCrud extends Component
     public function delete(): void
     {
         $d = Disciplina::findOrFail($this->disciplinaId);
+
         if ($d->aulas()->count() > 0) {
             session()->flash('error', 'Não é possível excluir pois esta disciplina possui aulas vinculadas.');
             $this->showDelete = false;
             return;
         }
+
+        $nome = $d->nome;
         $d->delete();
+
+        // Log
+        Log::registrar('excluiu', 'Disciplinas', "Excluiu disciplina: {$nome}");
+
         $this->showDelete = false;
         $this->resetForm();
-        // Log da ação
-        Log::registrar('excluiu', 'Disciplinas', 'Excluiu: ' . $d->nome);
         session()->flash('success', 'Disciplina excluída com sucesso!');
     }
 
@@ -117,8 +141,11 @@ class DisciplinasCrud extends Component
 
     private function resetForm(): void
     {
-        $this->disciplinaId = null;
-        $this->curso_id = $this->nome = $this->carga_horaria = $this->semestre_grade = '';
+        $this->disciplinaId  = null;
+        $this->curso_id      = '';
+        $this->nome          = '';
+        $this->carga_horaria = '';
+        $this->semestre_grade = '';
         $this->resetValidation();
     }
 

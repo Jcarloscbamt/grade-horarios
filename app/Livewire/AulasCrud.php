@@ -137,10 +137,13 @@ class AulasCrud extends Component
 
         $this->validate();
 
+        $isNovo = is_null($this->aulaId);
+
         if ($this->todosHorarios) {
             $horarios = Horario::where('tipo', '!=', 'intervalo')->get();
+            $criados  = 0;
             foreach ($horarios as $h) {
-                Aula::firstOrCreate(
+                [$aula, $novo] = Aula::firstOrCreate(
                     [
                         'turma_id'          => $this->turma_id,
                         'disciplina_id'     => $this->disciplina_id,
@@ -154,7 +157,17 @@ class AulasCrud extends Component
                         'modalidade'   => $this->modalidade,
                     ]
                 );
+                if ($novo) $criados++;
             }
+
+            // Log
+            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
+            Log::registrar('criou', 'Aulas', "Lote de aulas: {$criados} aulas criadas - " . ($dias[$this->dia_semana] ?? ''));
+
+            $this->showModal = false;
+            $this->resetForm();
+            session()->flash('success', "{$criados} aula(s) cadastrada(s) com sucesso!");
+
         } else {
             Aula::updateOrCreate(
                 ['id' => $this->aulaId],
@@ -169,18 +182,19 @@ class AulasCrud extends Component
                     'modalidade'        => $this->modalidade,
                 ]
             );
-        }
 
-        // Log da ação
-        $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
-        Log::registrar(
-            $isNovo ? 'criou' : 'editou',
-            'Aulas',
-            ($isNovo ? 'Nova aula: ' : 'Editou aula: ') . ($dias[$this->dia_semana] ?? '')
-        );
-        $this->showModal = false;
-        $this->resetForm();
-        session()->flash('success', $isNovo ? 'Aula cadastrada com sucesso!' : 'Aula atualizada com sucesso!');
+            // Log
+            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
+            Log::registrar(
+                $isNovo ? 'criou' : 'editou',
+                'Aulas',
+                ($isNovo ? 'Nova aula: ' : 'Editou aula: ') . ($dias[$this->dia_semana] ?? '')
+            );
+
+            $this->showModal = false;
+            $this->resetForm();
+            session()->flash('success', $isNovo ? 'Aula cadastrada com sucesso!' : 'Aula atualizada com sucesso!');
+        }
     }
 
     public function confirmDelete(int $id): void
