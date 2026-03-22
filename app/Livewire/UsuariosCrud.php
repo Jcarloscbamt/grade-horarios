@@ -13,43 +13,41 @@ class UsuariosCrud extends Component
 {
     use WithPagination;
 
-    public ?int $usuarioId  = null;
-    public string $name     = '';
-    public string $email    = '';
-    public string $password = '';
-    public string $role     = '';
+    public ?int   $usuarioId   = null;
+    public string $name        = '';
+    public string $email       = '';
+    public string $password    = '';
+    public string $perfil      = '';   // renomeado de 'role' para evitar conflito com @foreach no blade
 
-    public bool $showModal  = false;
-    public bool $showDelete = false;
-    public string $search   = '';
-    public string $modalTitle = '';
+    public bool   $showModal   = false;
+    public bool   $showDelete  = false;
+    public string $search      = '';
+    public string $modalTitle  = '';
 
     protected function rules(): array
     {
-        $passwordRule = $this->usuarioId
-            ? 'nullable|min:8'
-            : 'required|min:8';
-
         return [
             'name'     => 'required|min:3|max:100',
             'email'    => 'required|email|max:100|unique:users,email,' . ($this->usuarioId ?? 'NULL'),
-            'password' => $passwordRule,
-            'role'     => 'required|in:admin,coordenador',
+            'password' => $this->usuarioId ? 'nullable|min:8' : 'required|min:8',
+            'perfil'   => 'required|in:admin,coordenador,consulta',
         ];
     }
 
     protected array $messages = [
         'name.required'     => 'O nome é obrigatório.',
+        'name.min'          => 'O nome deve ter no mínimo 3 caracteres.',
         'email.required'    => 'O e-mail é obrigatório.',
         'email.unique'      => 'Este e-mail já está cadastrado.',
         'password.required' => 'A senha é obrigatória.',
         'password.min'      => 'A senha deve ter no mínimo 8 caracteres.',
-        'role.required'     => 'Selecione um perfil.',
+        'perfil.required'   => 'Selecione um perfil.',
+        'perfil.in'         => 'Perfil inválido.',
     ];
 
     public function create(): void
     {
-        $this->resetForm();
+        $this->limparFormulario();
         $this->modalTitle = 'Novo Usuário';
         $this->showModal  = true;
     }
@@ -57,11 +55,11 @@ class UsuariosCrud extends Component
     public function edit(int $id): void
     {
         $user = User::findOrFail($id);
-        $this->usuarioId = $user->id;
-        $this->name      = $user->name;
-        $this->email     = $user->email;
-        $this->password  = '';
-        $this->role      = $user->getRoleNames()->first() ?? '';
+        $this->usuarioId  = $user->id;
+        $this->name       = $user->name;
+        $this->email      = $user->email;
+        $this->password   = '';
+        $this->perfil     = $user->getRoleNames()->first() ?? '';
         $this->modalTitle = 'Editar Usuário';
         $this->showModal  = true;
     }
@@ -70,35 +68,39 @@ class UsuariosCrud extends Component
     {
         $this->validate();
 
+        $isNovo = is_null($this->usuarioId);
+        $nomeLog = $this->name;
+
         $data = [
             'name'  => $this->name,
             'email' => $this->email,
         ];
 
         if ($this->password) {
-            $data['password'] = Hash::make($this->password);
+            $data['password']                 = Hash::make($this->password);
+            $data['password_change_required'] = false;
         }
 
-        $isNovo = is_null($this->usuarioId);
+        if ($isNovo) {
+            $data['password_change_required'] = true;
+        }
+
         $user = User::updateOrCreate(['id' => $this->usuarioId], $data);
+        $user->syncRoles([$this->perfil]);
 
-        // Atualiza o perfil
-        $user->syncRoles([$this->role]);
-
-        $this->showModal = false;
-        $this->resetForm();
-        // Log da ação
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
             'Usuários',
-            ($isNovo ? 'Novo usuário: ' : 'Editou usuário: ') . $this->name
+            ($isNovo ? 'Novo usuário: ' : 'Editou usuário: ') . $nomeLog
         );
+
+        $this->showModal = false;
+        $this->limparFormulario();
         session()->flash('success', $isNovo ? 'Usuário cadastrado com sucesso!' : 'Usuário atualizado com sucesso!');
     }
 
     public function confirmDelete(int $id): void
     {
-        // Impede que o admin exclua a si mesmo
         if ($id === auth()->id()) {
             session()->flash('error', 'Você não pode excluir seu próprio usuário.');
             return;
@@ -109,11 +111,14 @@ class UsuariosCrud extends Component
 
     public function delete(): void
     {
-        User::findOrFail($this->usuarioId)->delete();
+        $user = User::findOrFail($this->usuarioId);
+        $nome = $user->name;
+        $user->delete();
+
+        Log::registrar('excluiu', 'Usuários', "Excluiu usuário: {$nome}");
+
         $this->showDelete = false;
-        $this->resetForm();
-        // Log da ação
-        Log::registrar('excluiu', 'Usuários', 'Excluiu usuário: ' . $u->name);
+        $this->limparFormulario();
         session()->flash('success', 'Usuário excluído com sucesso!');
     }
 
@@ -121,13 +126,17 @@ class UsuariosCrud extends Component
     {
         $this->showModal  = false;
         $this->showDelete = false;
-        $this->resetForm();
+        $this->limparFormulario();
     }
 
-    private function resetForm(): void
+    // Renomeado para não conflitar com resetForm do Livewire
+    private function limparFormulario(): void
     {
         $this->usuarioId = null;
-        $this->name = $this->email = $this->password = $this->role = '';
+        $this->name      = '';
+        $this->email     = '';
+        $this->password  = '';
+        $this->perfil    = '';
         $this->resetValidation();
     }
 
@@ -135,10 +144,12 @@ class UsuariosCrud extends Component
 
     public function render()
     {
+        $busca = $this->search;
+
         $usuarios = User::with('roles')
-            ->when($this->search, fn($q) =>
-                $q->where('name', 'like', "%{$this->search}%")
-                  ->orWhere('email', 'like', "%{$this->search}%")
+            ->when($busca, fn($q) =>
+                $q->where('name', 'like', "%{$busca}%")
+                  ->orWhere('email', 'like', "%{$busca}%")
             )
             ->orderBy('name')
             ->paginate(10);

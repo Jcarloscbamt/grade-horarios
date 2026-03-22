@@ -25,10 +25,9 @@
 
     {{-- Legenda de perfis --}}
     <div class="alert alert-light border mb-3 py-2">
-        <div class="d-flex gap-4 flex-wrap" style="font-size:13px">
-            <span><span class="badge bg-primary me-1">Admin</span> Acesso total — incluir, editar e excluir</span>
-            <span><span class="badge bg-success me-1">Coordenador</span> Incluir e editar — não pode excluir</span>
-            <span><span class="badge bg-secondary me-1">Consulta</span> Somente visualização — sem ações</span>
+        <div class="d-flex gap-4 flex-wrap">
+            <span><span class="badge bg-primary me-1">Admin</span> Acesso total — pode incluir, editar e <strong>excluir</strong></span>
+            <span><span class="badge bg-success me-1">Coordenador</span> Pode incluir e editar — <strong>não pode excluir</strong></span>
         </div>
     </div>
 
@@ -36,10 +35,13 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
                 <input type="text" wire:model.live.debounce.300ms="search"
                     class="form-control border-start-0"
-                    placeholder="Pesquisar por nome ou e-mail...">
+                    placeholder="Pesquisar por nome ou e-mail..."
+                    autocomplete="off">
             </div>
         </div>
     </div>
@@ -53,7 +55,6 @@
                         <th class="ps-3">Usuário</th>
                         <th>E-mail</th>
                         <th>Perfil</th>
-                        <th>Status</th>
                         <th>Cadastrado em</th>
                         <th class="text-center pe-3">Ações</th>
                     </tr>
@@ -77,26 +78,17 @@
                         </td>
                         <td>{{ $usuario->email }}</td>
                         <td>
-                            @php $role = $usuario->getRoleNames()->first(); @endphp
-                            @if($role === 'admin')
-                                <span class="badge bg-primary">Admin</span>
-                            @elseif($role === 'coordenador')
-                                <span class="badge bg-success">Coordenador</span>
-                            @elseif($role === 'consulta')
-                                <span class="badge bg-secondary">Consulta</span>
-                            @else
+                            @foreach($usuario->roles as $role)
+                                @if($role->name === 'admin')
+                                    <span class="badge bg-primary">Admin</span>
+                                @elseif($role->name === 'coordenador')
+                                    <span class="badge bg-success">Coordenador</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $role->name }}</span>
+                                @endif
+                            @endforeach
+                            @if($usuario->roles->isEmpty())
                                 <span class="badge bg-warning text-dark">Sem perfil</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($usuario->password_change_required)
-                                <span class="badge bg-warning text-dark">
-                                    <i class="bi bi-shield-exclamation me-1"></i>Troca de senha pendente
-                                </span>
-                            @else
-                                <span class="badge bg-success bg-opacity-10 text-success">
-                                    <i class="bi bi-check-circle me-1"></i>Ativo
-                                </span>
                             @endif
                         </td>
                         <td>{{ $usuario->created_at->format('d/m/Y') }}</td>
@@ -115,7 +107,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
+                        <td colspan="5" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             Nenhum usuário encontrado.
                         </td>
@@ -139,7 +131,11 @@
                     <button type="button" class="btn-close" wire:click="closeModal"></button>
                 </div>
                 <div class="modal-body">
+                    {{-- Campos ocultos para enganar o autocomplete do navegador --}}
+                    <input type="text"     name="fake_user"  style="display:none" autocomplete="username">
+                    <input type="password" name="fake_pass"  style="display:none" autocomplete="current-password">
                     <div class="row g-3">
+
                         <div class="col-12">
                             <label class="form-label fw-medium">Nome <span class="text-danger">*</span></label>
                             <input type="text" wire:model="name"
@@ -147,13 +143,16 @@
                                 placeholder="Nome completo">
                             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+
                         <div class="col-12">
                             <label class="form-label fw-medium">E-mail <span class="text-danger">*</span></label>
                             <input type="email" wire:model="email"
                                 class="form-control @error('email') is-invalid @enderror"
-                                placeholder="email@unisenaimt.com.br">
+                                placeholder="email@unisenaimt.com.br"
+                                autocomplete="off">
                             @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+
                         <div class="col-12">
                             <label class="form-label fw-medium">
                                 Senha
@@ -165,49 +164,47 @@
                             </label>
                             <input type="password" wire:model="password"
                                 class="form-control @error('password') is-invalid @enderror"
+                                autocomplete="new-password"
                                 placeholder="Mínimo 8 caracteres">
                             @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            @if(!$usuarioId)
-                            <div class="form-text">
-                                <i class="bi bi-info-circle me-1"></i>
-                                O usuário será solicitado a trocar a senha no primeiro login.
-                            </div>
-                            @endif
                         </div>
+
                         <div class="col-12">
                             <label class="form-label fw-medium">Perfil de Acesso <span class="text-danger">*</span></label>
-                            <select wire:model.live="role"
-                                class="form-select @error('role') is-invalid @enderror">
+                            <select wire:model="perfil"
+                                class="form-select @error('perfil') is-invalid @enderror">
                                 <option value="">Selecione o perfil...</option>
                                 <option value="admin">Admin — acesso total</option>
                                 <option value="coordenador">Coordenador — não pode excluir</option>
                                 <option value="consulta">Consulta — somente visualização</option>
                             </select>
-                            @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            @error('perfil') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-                            @if($role === 'admin')
+                            {{-- Descrição do perfil selecionado --}}
+                            @if($perfil === 'admin')
                             <div class="mt-2 p-2 rounded bg-primary bg-opacity-10">
                                 <small class="text-primary">
                                     <i class="bi bi-shield-check me-1"></i>
-                                    Acesso total: incluir, editar e excluir qualquer registro.
+                                    Acesso total: pode incluir, editar e excluir qualquer registro.
                                 </small>
                             </div>
-                            @elseif($role === 'coordenador')
+                            @elseif($perfil === 'coordenador')
                             <div class="mt-2 p-2 rounded bg-success bg-opacity-10">
                                 <small class="text-success">
                                     <i class="bi bi-person-check me-1"></i>
                                     Pode incluir e editar registros, mas <strong>não pode excluir</strong>.
                                 </small>
                             </div>
-                            @elseif($role === 'consulta')
-                            <div class="mt-2 p-2 rounded" style="background:#f8f9fa">
-                                <small class="text-secondary">
+                            @elseif($perfil === 'consulta')
+                            <div class="mt-2 p-2 rounded bg-warning bg-opacity-10">
+                                <small class="text-warning">
                                     <i class="bi bi-eye me-1"></i>
-                                    Somente visualização — não pode incluir, editar nem excluir.
+                                    Somente visualização — não pode incluir, editar ou excluir.
                                 </small>
                             </div>
                             @endif
                         </div>
+
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
@@ -248,4 +245,5 @@
         </div>
     </div>
     @endif
+
 </div>
