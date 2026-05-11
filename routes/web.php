@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TrocarSenhaController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -45,4 +45,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/grade/imprimir', GradeImpressaoController::class)->name('grade.imprimir');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
