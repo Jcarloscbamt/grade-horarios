@@ -21,9 +21,6 @@ class ProfessoresCrud extends Component
     public string $telefone    = '';
     public string $cpf         = '';
 
-    // ── Disponibilidade GERAL do professor (independente dos vínculos)
-    public array  $disponibilidade  = [];   // [1,2,3,4,5]
-
     // ── Controle de modais ────────────────────────────────────────
     public bool   $showModal   = false;
     public bool   $showDelete  = false;
@@ -31,19 +28,15 @@ class ProfessoresCrud extends Component
     public string $filtro      = 'todos';
     public string $modalTitle  = '';
 
-    // ── Seleção de disciplina/turma (para adicionar/editar vínculo) ─
+    // ── Seleção de disciplina/turma ───────────────────────────────
+    // Agora: disciplina → turma (sem select de curso no meio)
     public string $sel_disciplina_id   = '';
     public string $sel_disciplina_nome = '';
-    public string $sel_curso_nome      = '';
-    public int    $sel_curso_id_int    = 0;
+    public string $sel_curso_nome      = '';   // apenas para exibição
     public string $sel_turma_id        = '';
-    public array  $sel_dias            = [];   // dias DESTE vínculo
+    public array  $sel_dias            = [];
     public array  $turmasDoVinculo     = [];
 
-    // Índice do vínculo em edição (-1 = novo)
-    public int    $editandoVinculoIdx  = -1;
-
-    // ── Lista de vínculos ─────────────────────────────────────────
     public array  $vinculos            = [];
 
     // ── Busca de disciplinas ──────────────────────────────────────
@@ -53,11 +46,11 @@ class ProfessoresCrud extends Component
     protected $queryString = ['search', 'filtro'];
 
     // ─────────────────────────────────────────────────────────────
-    // Dias da semana (SEG–SEX, sem sábado)
+    // Constante dias da semana (SEG–SAB)
     // ─────────────────────────────────────────────────────────────
     private function diasNomes(): array
     {
-        return [1 => 'SEG', 2 => 'TER', 3 => 'QUA', 4 => 'QUI', 5 => 'SEX'];
+        return [1 => 'SEG', 2 => 'TER', 3 => 'QUA', 4 => 'QUI', 5 => 'SEX', 6 => 'SAB'];
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -92,12 +85,12 @@ class ProfessoresCrud extends Component
     }
 
     protected array $messages = [
-        'nome.required'  => 'O nome é obrigatório.',
-        'email.required' => 'O e-mail é obrigatório.',
-        'email.unique'   => 'Este e-mail já está cadastrado.',
-        'cpf.required'   => 'O CPF é obrigatório.',
-        'cpf.min'        => 'CPF incompleto. Use o formato 000.000.000-00.',
-        'telefone.min'   => 'Telefone incompleto. Use o formato (00) 00000-0000.',
+        'nome.required'     => 'O nome é obrigatório.',
+        'email.required'    => 'O e-mail é obrigatório.',
+        'email.unique'      => 'Este e-mail já está cadastrado.',
+        'cpf.required'      => 'O CPF é obrigatório.',
+        'cpf.min'           => 'CPF incompleto. Use o formato 000.000.000-00.',
+        'telefone.min'      => 'Telefone incompleto. Use o formato (00) 00000-0000.',
     ];
 
     // ─────────────────────────────────────────────────────────────
@@ -157,27 +150,12 @@ class ProfessoresCrud extends Component
         $this->mostrarLista = strlen($this->buscaDisciplina) >= 2;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Disponibilidade Geral
-    // ─────────────────────────────────────────────────────────────
-    public function toggleTodosDisponibilidade(): void
-    {
-        if (count($this->disponibilidade) === 5) {
-            $this->disponibilidade = [];
-        } else {
-            $this->disponibilidade = [1, 2, 3, 4, 5];
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Seleção de disciplina (cascata: disciplina → turmas do curso)
-    // ─────────────────────────────────────────────────────────────
+    // Ao selecionar disciplina: carrega turmas do curso dela diretamente
     public function selecionarDisciplina(int $id, string $nome, string $cursoNome, int $cursoId): void
     {
         $this->sel_disciplina_id   = $id;
         $this->sel_disciplina_nome = $nome;
         $this->sel_curso_nome      = $cursoNome;
-        $this->sel_curso_id_int    = $cursoId;
         $this->sel_turma_id        = '';
         $this->sel_dias            = [];
         $this->mostrarLista        = false;
@@ -190,44 +168,32 @@ class ProfessoresCrud extends Component
             ->toArray();
     }
 
+    // Cancela a seleção atual para escolher outra disciplina
     public function cancelarSelecao(): void
     {
         $this->sel_disciplina_id   = '';
         $this->sel_disciplina_nome = '';
         $this->sel_curso_nome      = '';
-        $this->sel_curso_id_int    = 0;
         $this->sel_turma_id        = '';
         $this->sel_dias            = [];
         $this->turmasDoVinculo     = [];
         $this->buscaDisciplina     = '';
         $this->mostrarLista        = false;
-        $this->editandoVinculoIdx  = -1;
         $this->resetValidation('vinculo');
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Editar vínculo já adicionado
-    // ─────────────────────────────────────────────────────────────
-    public function editarVinculo(int $index): void
+    // Toggle todos os dias (SEG-SAB = 6 dias)
+    public function toggleTodosDias(): void
     {
-        $v = $this->vinculos[$index];
-
-        $this->editandoVinculoIdx  = $index;
-        $this->sel_disciplina_id   = $v['disciplina_id'];
-        $this->sel_disciplina_nome = $v['disciplina_nome'];
-        $this->sel_curso_nome      = $v['curso_nome'];
-        $this->sel_curso_id_int    = $v['curso_id'];
-        $this->sel_turma_id        = $v['turma_id'];
-        $this->sel_dias            = $v['dias'];
-
-        $this->turmasDoVinculo = Turma::where('curso_id', $v['curso_id'])
-            ->orderBy('nome')
-            ->get(['id', 'nome', 'semestre'])
-            ->toArray();
+        if (count($this->sel_dias) === 6) {
+            $this->sel_dias = [];
+        } else {
+            $this->sel_dias = [1, 2, 3, 4, 5, 6];
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Adicionar / Salvar vínculo
+    // Adicionar / Remover vínculo
     // ─────────────────────────────────────────────────────────────
     public function adicionarVinculo(): void
     {
@@ -240,20 +206,7 @@ class ProfessoresCrud extends Component
             return;
         }
 
-        // Valida se os dias do vínculo estão na disponibilidade geral
-        if (!empty($this->disponibilidade)) {
-            $diasFora = array_diff($this->sel_dias, $this->disponibilidade);
-            if (!empty($diasFora)) {
-                $nomes = $this->diasNomes();
-                $labels = implode(', ', array_map(fn($d) => $nomes[$d] ?? $d, $diasFora));
-                $this->addError('vinculo', "O(s) dia(s) {$labels} não estão na disponibilidade geral do professor.");
-                return;
-            }
-        }
-
-        // Verifica duplicidade (ignora o próprio em edição)
-        foreach ($this->vinculos as $i => $v) {
-            if ($i === $this->editandoVinculoIdx) continue;
+        foreach ($this->vinculos as $v) {
             if ($v['disciplina_id'] == $this->sel_disciplina_id && $v['turma_id'] == $this->sel_turma_id) {
                 $this->addError('vinculo', 'Este vínculo (disciplina + turma) já foi adicionado.');
                 return;
@@ -262,22 +215,14 @@ class ProfessoresCrud extends Component
 
         $turma = Turma::find($this->sel_turma_id);
 
-        $novoVinculo = [
+        $this->vinculos[] = [
             'disciplina_id'   => $this->sel_disciplina_id,
             'disciplina_nome' => $this->sel_disciplina_nome,
             'curso_nome'      => $this->sel_curso_nome,
-            'curso_id'        => $this->sel_curso_id_int,
             'turma_id'        => $this->sel_turma_id,
             'turma_nome'      => $turma->nome,
             'dias'            => array_values($this->sel_dias),
         ];
-
-        if ($this->editandoVinculoIdx >= 0) {
-            // Substituí o vínculo editado
-            $this->vinculos[$this->editandoVinculoIdx] = $novoVinculo;
-        } else {
-            $this->vinculos[] = $novoVinculo;
-        }
 
         $this->cancelarSelecao();
     }
@@ -286,9 +231,6 @@ class ProfessoresCrud extends Component
     {
         array_splice($this->vinculos, $index, 1);
         $this->vinculos = array_values($this->vinculos);
-        if ($this->editandoVinculoIdx === $index) {
-            $this->cancelarSelecao();
-        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -304,19 +246,17 @@ class ProfessoresCrud extends Component
     public function edit(int $id): void
     {
         $p = Professor::with('disciplinasTurmas.disciplina.curso', 'disciplinasTurmas.turma')->findOrFail($id);
-        $this->professorId    = $p->id;
-        $this->nome           = $p->nome;
-        $this->email          = $p->email;
-        $this->telefone       = $p->telefone ?? '';
-        $this->cpf            = $p->cpf;
-        $this->disponibilidade = $p->disponibilidade ?? [];
-        $this->modalTitle     = 'Editar Professor';
+        $this->professorId = $p->id;
+        $this->nome        = $p->nome;
+        $this->email       = $p->email;
+        $this->telefone    = $p->telefone ?? '';
+        $this->cpf         = $p->cpf;
+        $this->modalTitle  = 'Editar Professor';
 
         $this->vinculos = $p->disciplinasTurmas->map(fn($pd) => [
             'disciplina_id'   => $pd->disciplina_id,
             'disciplina_nome' => $pd->disciplina->nome,
             'curso_nome'      => $pd->disciplina->curso->nome ?? '',
-            'curso_id'        => $pd->disciplina->curso_id ?? 0,
             'turma_id'        => $pd->turma_id,
             'turma_nome'      => $pd->turma->nome,
             'dias'            => $pd->dias_semana ?? [],
@@ -335,11 +275,10 @@ class ProfessoresCrud extends Component
         $professor = Professor::updateOrCreate(
             ['id' => $this->professorId],
             [
-                'nome'           => $this->nome,
-                'email'          => $this->email,
-                'telefone'       => $this->telefone ?: null,
-                'cpf'            => $cpfFormatado,
-                'disponibilidade' => $this->disponibilidade,
+                'nome'     => $this->nome,
+                'email'    => $this->email,
+                'telefone' => $this->telefone ?: null,
+                'cpf'      => $cpfFormatado,
             ]
         );
 
@@ -405,18 +344,15 @@ class ProfessoresCrud extends Component
         $this->email               = '';
         $this->telefone            = '';
         $this->cpf                 = '';
-        $this->disponibilidade     = [];
         $this->vinculos            = [];
         $this->buscaDisciplina     = '';
         $this->mostrarLista        = false;
         $this->sel_disciplina_id   = '';
         $this->sel_disciplina_nome = '';
         $this->sel_curso_nome      = '';
-        $this->sel_curso_id_int    = 0;
         $this->sel_turma_id        = '';
         $this->sel_dias            = [];
         $this->turmasDoVinculo     = [];
-        $this->editandoVinculoIdx  = -1;
         $this->resetValidation();
     }
 
@@ -451,11 +387,11 @@ class ProfessoresCrud extends Component
                 ->orderBy('nome')
                 ->get()
                 ->map(fn($d) => [
-                    'id'             => $d->id,
-                    'nome'           => $d->nome,
-                    'curso_id'       => $d->curso_id,
-                    'curso_nome'     => $d->curso->nome ?? '—',
-                    'semestre_grade' => $d->semestre_grade,
+                    'id'            => $d->id,
+                    'nome'          => $d->nome,
+                    'curso_id'      => $d->curso_id,
+                    'curso_nome'    => $d->curso->nome ?? '—',
+                    'semestre_grade'=> $d->semestre_grade,
                 ])
                 ->toArray();
         }

@@ -13,6 +13,7 @@
         @endhasanyrole
     </div>
 
+    {{-- ── Alertas ──────────────────────────────────────────────────── --}}
     @if(session()->has('success'))
         <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
@@ -140,7 +141,7 @@
                     <div class="row g-0" style="min-height:560px">
 
                         {{-- ════════════════════════════════════════════════
-                             Coluna Esquerda — Dados + Disponibilidade Geral
+                             Coluna Esquerda — Dados básicos + Disponibilidade
                              ════════════════════════════════════════════════ --}}
                         <div class="col-lg-5 border-end p-4">
 
@@ -195,44 +196,29 @@
                                 </div>
                             </div>
 
-                            {{-- ── Disponibilidade Geral ─────────────────────────
-                                 Campo INDEPENDENTE — não é alterado pelos vínculos
-                             ────────────────────────────────────────────────────── --}}
+                            {{-- ── Disponibilidade geral ──────────────────────── --}}
                             <hr class="my-4">
-                            <h6 class="fw-bold text-muted text-uppercase mb-1"
+                            <h6 class="fw-bold text-muted text-uppercase mb-2"
                                 style="font-size:11px;letter-spacing:.8px">
                                 <i class="bi bi-calendar-week me-1"></i> Disponibilidade Geral
                             </h6>
-                            <p class="text-muted small mb-2">
-                                Marque os dias em que o professor pode lecionar.<br>
-                                <span class="text-warning fw-medium">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    Os dias das disciplinas serão validados com base nesta seleção.
-                                </span>
-                            </p>
+                            <p class="text-muted small mb-2">Dias disponíveis para lecionar:</p>
 
-                            {{-- Botão selecionar todos --}}
-                            <button type="button"
-                                wire:click="toggleTodosDisponibilidade"
-                                class="btn btn-sm w-100 mb-2 {{ count($disponibilidade) === 5 ? 'btn-dark' : 'btn-outline-dark' }}">
+                            <button type="button" wire:click="toggleTodosDias"
+                                class="btn btn-sm w-100 mb-2 {{ count($sel_dias) === 6 ? 'btn-dark' : 'btn-outline-dark' }}">
                                 <i class="bi bi-calendar-check me-1"></i>
-                                {{ count($disponibilidade) === 5 ? '✓ Todos os dias selecionados' : 'Selecionar todos os dias' }}
+                                {{ count($sel_dias) === 6 ? '✓ Todos os dias selecionados' : 'Selecionar todos os dias' }}
                             </button>
 
-                            {{-- Checkboxes da disponibilidade GERAL --}}
                             <div class="d-flex gap-2 flex-wrap">
                                 @foreach($diasNomes as $num => $label)
                                 <div class="form-check form-check-inline m-0">
-                                    {{--
-                                        wire:model="disponibilidade" (não sel_dias!)
-                                        Isso garante que é um array separado e independente
-                                    --}}
                                     <input class="form-check-input" type="checkbox"
-                                        wire:model.live="disponibilidade"
+                                        wire:model.live="sel_dias"
                                         value="{{ $num }}"
-                                        id="disp_{{ $num }}">
-                                    <label class="form-check-label fw-semibold" for="disp_{{ $num }}">
-                                        <span class="badge {{ in_array($num, $disponibilidade) ? 'bg-success' : 'bg-light text-dark border' }}"
+                                        id="dia_geral_{{ $num }}">
+                                    <label class="form-check-label fw-semibold" for="dia_geral_{{ $num }}">
+                                        <span class="badge {{ in_array($num, $sel_dias) ? ($num == 6 ? 'bg-warning text-dark' : 'bg-primary') : 'bg-light text-dark border' }}"
                                               style="font-size:13px;min-width:42px;cursor:pointer">
                                             {{ $label }}
                                         </span>
@@ -240,17 +226,10 @@
                                 </div>
                                 @endforeach
                             </div>
-
-                            @if(empty($disponibilidade))
-                            <div class="text-muted small mt-2">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Selecione ao menos um dia antes de vincular disciplinas.
-                            </div>
-                            @endif
                         </div>
 
                         {{-- ════════════════════════════════════════════════
-                             Coluna Direita — Vínculos Disciplina / Turma
+                             Coluna Direita — Vínculo Disciplina / Turma
                              ════════════════════════════════════════════════ --}}
                         <div class="col-lg-7 p-4 d-flex flex-column" style="background:#f8f9fa">
 
@@ -266,29 +245,11 @@
                             @enderror
 
                             {{-- ── Formulário de vínculo ─────────────────────── --}}
-                            <div class="card border-0 shadow-sm mb-3 {{ $editandoVinculoIdx >= 0 ? 'border-warning border-2' : '' }}"
-                                 style="{{ $editandoVinculoIdx >= 0 ? 'border:2px solid #f59e0b !important' : '' }}">
-
-                                @if($editandoVinculoIdx >= 0)
-                                <div class="card-header py-1 px-3"
-                                     style="background:#fef3c7;border-bottom:1px solid #f59e0b">
-                                    <span class="fw-semibold small" style="color:#92400e">
-                                        <i class="bi bi-pencil me-1"></i>
-                                        Editando vínculo #{{ $editandoVinculoIdx + 1 }}
-                                    </span>
-                                    <button type="button"
-                                        wire:click="cancelarSelecao"
-                                        class="btn btn-sm btn-link text-muted float-end py-0"
-                                        style="font-size:12px">
-                                        Cancelar edição
-                                    </button>
-                                </div>
-                                @endif
-
+                            <div class="card border-0 shadow-sm mb-3">
                                 <div class="card-body p-3">
 
                                     @if(!$sel_disciplina_id)
-                                    {{-- PASSO 1: Buscar disciplina --}}
+                                    {{-- Passo 1: Buscar disciplina --}}
                                     <label class="form-label fw-medium small mb-1">
                                         <span class="badge bg-primary me-1">1</span>
                                         Buscar Disciplina <span class="text-danger">*</span>
@@ -309,6 +270,7 @@
                                         @endif
                                     </div>
 
+                                    {{-- Dropdown de resultados --}}
                                     @if($mostrarLista)
                                     <div class="border rounded bg-white" style="max-height:180px;overflow-y:auto">
                                         @forelse($disciplinasDisponiveis as $disc)
@@ -322,11 +284,13 @@
                                                         <i class="bi bi-mortarboard me-1"></i>{{ $disc['curso_nome'] }}
                                                     </div>
                                                 </div>
-                                                @if($disc['semestre_grade'])
-                                                <span class="badge bg-secondary rounded-pill ms-2" style="font-size:10px">
-                                                    {{ $disc['semestre_grade'] }}º sem
-                                                </span>
-                                                @endif
+                                                <div class="d-flex gap-1 ms-2">
+                                                    @if($disc['semestre_grade'])
+                                                        <span class="badge bg-secondary rounded-pill" style="font-size:10px">
+                                                            {{ $disc['semestre_grade'] }}º sem
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </button>
                                         @empty
@@ -342,7 +306,7 @@
                                     @endif
 
                                     @else
-                                    {{-- Disciplina já selecionada: mostra chip + botão Trocar --}}
+                                    {{-- Disciplina selecionada: mostra resumo + botão cancelar --}}
                                     <div class="d-flex align-items-center justify-content-between
                                                 rounded p-2 mb-3 border border-primary"
                                          style="background:#e8f0fe">
@@ -363,7 +327,7 @@
                                         </button>
                                     </div>
 
-                                    {{-- PASSO 2: Selecionar turma --}}
+                                    {{-- Passo 2: Selecionar turma --}}
                                     <div class="mb-2">
                                         <label class="form-label fw-medium small mb-1">
                                             <span class="badge bg-primary me-1">2</span>
@@ -386,63 +350,43 @@
                                         @endif
                                     </div>
 
-                                    {{-- PASSO 3: Dias para ESTE vínculo (validados contra disponibilidade geral) --}}
+                                    {{-- Passo 3: Dias disponíveis para esta disciplina --}}
                                     @if($sel_turma_id)
                                     <div class="mb-3">
                                         <label class="form-label fw-medium small mb-1">
                                             <span class="badge bg-primary me-1">3</span>
-                                            Dias para esta disciplina <span class="text-danger">*</span>
+                                            Dias disponíveis <span class="text-danger">*</span>
                                         </label>
-
-                                        @if(empty($disponibilidade))
-                                        <div class="alert alert-warning py-2" style="font-size:12px">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>
-                                            Defina a disponibilidade geral do professor primeiro (coluna esquerda).
-                                        </div>
-                                        @else
                                         <div class="d-flex gap-2 flex-wrap">
                                             @foreach($diasNomes as $num => $label)
-                                            @php
-                                                $disponivel = in_array($num, $disponibilidade);
-                                                $marcado    = in_array($num, $sel_dias);
-                                            @endphp
-                                            <div class="form-check form-check-inline m-0"
-                                                 title="{{ !$disponivel ? 'Dia fora da disponibilidade geral' : '' }}">
-                                                {{-- wire:model="sel_dias" (NÃO "disponibilidade") --}}
+                                            <div class="form-check form-check-inline m-0">
                                                 <input class="form-check-input" type="checkbox"
                                                     wire:model.live="sel_dias"
                                                     value="{{ $num }}"
-                                                    id="sdia_{{ $num }}"
-                                                    {{ !$disponivel ? 'disabled' : '' }}>
-                                                <label class="form-check-label fw-semibold" for="sdia_{{ $num }}">
-                                                    <span class="badge {{ !$disponivel
-                                                        ? 'bg-light text-muted border'
-                                                        : ($marcado ? 'bg-primary' : 'bg-light text-dark border') }}"
-                                                          style="font-size:12px;min-width:38px;cursor:{{ $disponivel ? 'pointer' : 'not-allowed' }};
-                                                                 opacity:{{ $disponivel ? '1' : '0.4' }}">
+                                                    id="vdia_{{ $num }}">
+                                                <label class="form-check-label fw-semibold" for="vdia_{{ $num }}">
+                                                    <span class="badge {{ in_array($num, $sel_dias)
+                                                        ? ($num == 6 ? 'bg-warning text-dark' : 'bg-primary')
+                                                        : 'bg-light text-dark border' }}"
+                                                          style="font-size:12px;min-width:38px;cursor:pointer">
                                                         {{ $label }}
                                                     </span>
                                                 </label>
                                             </div>
                                             @endforeach
                                         </div>
-                                        <div class="text-muted mt-1" style="font-size:11px">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            Apenas os dias da disponibilidade geral estão habilitados.
-                                        </div>
-                                        @endif
                                     </div>
                                     @endif
                                     @endif
 
-                                    {{-- Botão Adicionar / Salvar edição --}}
-                                    @if($sel_disciplina_id && $sel_turma_id && !empty($disponibilidade))
+                                    {{-- Botão Adicionar (só aparece quando tudo preenchido) --}}
+                                    @if($sel_disciplina_id && $sel_turma_id)
                                     <button type="button"
                                         wire:click="adicionarVinculo"
-                                        class="btn btn-sm w-100 mt-1 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}"
+                                        class="btn btn-success btn-sm w-100 mt-1"
                                         {{ empty($sel_dias) ? 'disabled' : '' }}>
-                                        <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>
-                                        {{ $editandoVinculoIdx >= 0 ? 'Salvar Alteração' : 'Adicionar Vínculo' }}
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        Adicionar Vínculo
                                     </button>
                                     @endif
 
@@ -460,7 +404,7 @@
                                 @else
                                 <div class="d-flex flex-column gap-2">
                                     @foreach($vinculos as $i => $v)
-                                    <div class="card border-0 shadow-sm {{ $editandoVinculoIdx === $i ? 'border border-warning' : '' }}">
+                                    <div class="card border-0 shadow-sm">
                                         <div class="card-body py-2 px-3">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
@@ -474,28 +418,19 @@
                                                     </div>
                                                     <div class="mt-1 d-flex gap-1 flex-wrap">
                                                         @foreach($v['dias'] as $dia)
-                                                        <span class="badge bg-primary" style="font-size:10px">
+                                                        <span class="badge {{ $dia == 6 ? 'bg-warning text-dark' : 'bg-primary' }}"
+                                                              style="font-size:10px">
                                                             {{ $diasNomes[$dia] ?? $dia }}
                                                         </span>
                                                         @endforeach
                                                     </div>
                                                 </div>
-                                                <div class="d-flex gap-1 ms-2">
-                                                    {{-- Botão EDITAR vínculo --}}
-                                                    <button type="button"
-                                                        wire:click="editarVinculo({{ $i }})"
-                                                        class="btn btn-sm btn-outline-secondary"
-                                                        title="Editar vínculo">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </button>
-                                                    {{-- Botão EXCLUIR vínculo --}}
-                                                    <button type="button"
-                                                        wire:click="removerVinculo({{ $i }})"
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        title="Remover vínculo">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </div>
+                                                <button type="button"
+                                                    wire:click="removerVinculo({{ $i }})"
+                                                    class="btn btn-sm btn-outline-danger ms-2"
+                                                    title="Remover vínculo">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

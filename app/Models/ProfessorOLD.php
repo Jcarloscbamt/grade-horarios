@@ -9,11 +9,7 @@ class Professor extends Model
 {
     protected $table = 'professores';
 
-    protected $fillable = ['nome', 'email', 'telefone', 'cpf', 'disponibilidade'];
-
-    protected $casts = [
-        'disponibilidade' => 'array',
-    ];
+    protected $fillable = ['nome', 'email', 'telefone', 'cpf'];
 
     public function aulas(): HasMany
     {
