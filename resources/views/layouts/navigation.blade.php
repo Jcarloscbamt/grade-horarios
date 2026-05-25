@@ -1,9 +1,8 @@
 {{-- resources/views/layouts/navigation.blade.php --}}
 
-{{-- Variáveis de cor UniSENAI --}}
 @php
-    $corPrimaria = '#E30613'; // Vermelho UniSENAI
-    $corEscura   = '#1a1a1a'; // Quase preto para navbar
+    $corPrimaria = '#E30613';
+    $corEscura   = '#1a1a1a';
 @endphp
 
 <style>
@@ -72,7 +71,6 @@
              alt="UniSENAI MT"
              style="height:36px; filter: brightness(0) invert(1);"
              onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex'">
-        {{-- Fallback caso a imagem não carregue --}}
         <span id="logo-fallback" class="d-none align-items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                  fill="none" stroke="#E30613" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -92,6 +90,7 @@
     <div class="collapse navbar-collapse" id="navMenu">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3">
 
+            {{-- Dashboard --}}
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                    href="{{ route('dashboard') }}">
@@ -99,12 +98,23 @@
                 </a>
             </li>
 
+            {{-- Grade de Horários (visualização) --}}
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('grade') ? 'active' : '' }}"
                    href="{{ route('grade') }}">
                     <i class="bi bi-grid-3x3-gap me-1"></i>Grade de Horários
                 </a>
             </li>
+
+            {{-- ✦ NOVO: Gerador de Grade — somente admin e coordenador --}}
+            @hasanyrole('admin|coordenador')
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('gerador-grade') ? 'active' : '' }}"
+                   href="{{ route('gerador-grade') }}">
+                    <i class="bi bi-magic me-1"></i>Gerador de Grade
+                </a>
+            </li>
+            @endhasanyrole
 
             {{-- Cadastros --}}
             <li class="nav-item dropdown">
@@ -113,14 +123,44 @@
                     <i class="bi bi-collection me-1"></i>Cadastros
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item {{ request()->routeIs('cursos') ? 'active' : '' }}" href="{{ route('cursos') }}"><i class="bi bi-mortarboard me-2" style="color:#E30613"></i>Cursos</a></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('turmas') ? 'active' : '' }}" href="{{ route('turmas') }}"><i class="bi bi-people me-2" style="color:#E30613"></i>Turmas</a></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('disciplinas') ? 'active' : '' }}" href="{{ route('disciplinas') }}"><i class="bi bi-book me-2" style="color:#E30613"></i>Disciplinas</a></li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('cursos') ? 'active' : '' }}"
+                           href="{{ route('cursos') }}">
+                            <i class="bi bi-mortarboard me-2" style="color:#E30613"></i>Cursos
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('turmas') ? 'active' : '' }}"
+                           href="{{ route('turmas') }}">
+                            <i class="bi bi-people me-2" style="color:#E30613"></i>Turmas
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('disciplinas') ? 'active' : '' }}"
+                           href="{{ route('disciplinas') }}">
+                            <i class="bi bi-book me-2" style="color:#E30613"></i>Disciplinas
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('professores') ? 'active' : '' }}" href="{{ route('professores') }}"><i class="bi bi-person-badge me-2" style="color:#E30613"></i>Professores</a></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('salas') ? 'active' : '' }}" href="{{ route('salas') }}"><i class="bi bi-door-open me-2" style="color:#E30613"></i>Salas</a></li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('professores') ? 'active' : '' }}"
+                           href="{{ route('professores') }}">
+                            <i class="bi bi-person-badge me-2" style="color:#E30613"></i>Professores
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('salas') ? 'active' : '' }}"
+                           href="{{ route('salas') }}">
+                            <i class="bi bi-door-open me-2" style="color:#E30613"></i>Salas
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('aulas') ? 'active' : '' }}" href="{{ route('aulas') }}"><i class="bi bi-calendar-week me-2" style="color:#E30613"></i>Aulas</a></li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('aulas') ? 'active' : '' }}"
+                           href="{{ route('aulas') }}">
+                            <i class="bi bi-calendar-week me-2" style="color:#E30613"></i>Aulas
+                        </a>
+                    </li>
                 </ul>
             </li>
 
@@ -131,11 +171,26 @@
                     <i class="bi bi-gear me-1"></i>Configurações
                 </a>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item {{ request()->routeIs('horarios') ? 'active' : '' }}" href="{{ route('horarios') }}"><i class="bi bi-clock me-2" style="color:#E30613"></i>Horários</a></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('periodos') ? 'active' : '' }}" href="{{ route('periodos') }}"><i class="bi bi-calendar3 me-2" style="color:#E30613"></i>Períodos Letivos</a></li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('horarios') ? 'active' : '' }}"
+                           href="{{ route('horarios') }}">
+                            <i class="bi bi-clock me-2" style="color:#E30613"></i>Horários
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('periodos') ? 'active' : '' }}"
+                           href="{{ route('periodos') }}">
+                            <i class="bi bi-calendar3 me-2" style="color:#E30613"></i>Períodos Letivos
+                        </a>
+                    </li>
                     @hasrole('admin')
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item {{ request()->routeIs('logs') ? 'active' : '' }}" href="{{ route('logs') }}"><i class="bi bi-journal-text me-2" style="color:#E30613"></i>Log de Alterações</a></li>
+                    <li>
+                        <a class="dropdown-item {{ request()->routeIs('logs') ? 'active' : '' }}"
+                           href="{{ route('logs') }}">
+                            <i class="bi bi-journal-text me-2" style="color:#E30613"></i>Log de Alterações
+                        </a>
+                    </li>
                     @endhasrole
                 </ul>
             </li>
@@ -171,7 +226,11 @@
                     @endif
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person me-2" style="color:#E30613"></i>Perfil</a></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                            <i class="bi bi-person me-2" style="color:#E30613"></i>Perfil
+                        </a>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
