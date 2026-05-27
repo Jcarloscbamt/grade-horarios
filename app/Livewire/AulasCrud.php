@@ -227,8 +227,48 @@ class AulasCrud extends Component
         $this->resetValidation();
     }
 
-    public function updatingSearch(): void { $this->resetPage(); }
-    public function updatingFiltro(): void { $this->resetPage(); $this->search = ''; }
+
+    // ── Seleção em lote ──────────────────────────────
+    public array $selecionados    = [];
+    public bool  $todosSelecionados = false;
+    public bool  $showDeleteLote  = false;
+
+    public function toggleTodos(array $idsVisiveis): void
+    {
+        if (count($this->selecionados) === count($idsVisiveis)) {
+            $this->selecionados = [];
+            $this->todosSelecionados = false;
+        } else {
+            $this->selecionados = $idsVisiveis;
+            $this->todosSelecionados = true;
+        }
+    }
+
+    public function confirmarDeleteLote(): void
+    {
+        if (!empty($this->selecionados)) {
+            $this->showDeleteLote = true;
+        }
+    }
+
+    public function deleteLote(): void
+    {
+        \App\Models\Aula::whereIn('id', $this->selecionados)->delete();
+        $qtd = count($this->selecionados);
+        \App\Models\Log::registrar('excluiu', 'Aulas', "Exclusão em lote: {$qtd} aula(s) removida(s)");
+        $this->selecionados      = [];
+        $this->todosSelecionados = false;
+        $this->showDeleteLote    = false;
+        session()->flash('success', "{$qtd} aula(s) excluída(s) com sucesso!");
+    }
+
+    public function cancelarDeleteLote(): void
+    {
+        $this->showDeleteLote = false;
+    }
+
+    public function updatingSearch(): void { $this->resetPage(); $this->selecionados = []; $this->todosSelecionados = false; }
+    public function updatingFiltro(): void { $this->resetPage(); $this->search = ''; $this->selecionados = []; $this->todosSelecionados = false; }
 
     public function render()
     {

@@ -2,38 +2,55 @@
 // app/Livewire/GradeHorarios.php
 namespace App\Livewire;
 
-use App\Models\Aula;
-use App\Models\Turma;
-use App\Models\PeriodoLetivo;
+use App\Models\{Aula, Turma, Curso, PeriodoLetivo};
 use Livewire\Component;
 
 class GradeHorarios extends Component
 {
-    public string $turma_id         = '';
-    public string $periodo_letivo_id = '';
+    public string $curso_id          = '';
+    public array  $turmasSelecionadas = [];
+    public string $periodo_letivo_id  = '';
 
-    public array $dias = [
-        1 => 'SEG',
-        2 => 'TER',
-        3 => 'QUA',
-        4 => 'QUI',
-        5 => 'SEX',
-    ];
+    public array $dias = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
     public function mount(): void
     {
-        $periodoAtivo = PeriodoLetivo::where('ativo', true)->first();
-        if ($periodoAtivo) {
-            $this->periodo_letivo_id = $periodoAtivo->id;
+        $periodo = PeriodoLetivo::where('ativo', true)->first();
+        if ($periodo) {
+            $this->periodo_letivo_id = $periodo->id;
         }
+    }
+
+    public function updatedCursoId(): void
+    {
+        $this->turmasSelecionadas = [];
+    }
+
+    public function toggleTodasTurmas(): void
+    {
+        $query = Turma::where('ativo', true);
+        if ($this->curso_id) {
+            $query->where('curso_id', $this->curso_id);
+        }
+        $todos = $query->pluck('id')->toArray();
+        if (count($this->turmasSelecionadas) >= count($todos)) {
+            $this->turmasSelecionadas = [];
+        } else {
+            $this->turmasSelecionadas = $todos;
+        }
+    }
+
+    public function limpar(): void
+    {
+        $this->curso_id          = '';
+        $this->turmasSelecionadas = [];
+        $this->periodo_letivo_id  = '';
     }
 
     private function gerarQrCodeSvg(string $texto): string
     {
         try {
-            if (!class_exists(\BaconQrCode\Writer::class)) {
-                return '';
-            }
+            if (!class_exists(\BaconQrCode\Writer::class)) return '';
             $renderer = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
             $style    = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(90);
             $image    = new \BaconQrCode\Renderer\ImageRenderer($style, $renderer);
@@ -46,42 +63,55 @@ class GradeHorarios extends Component
 
     public function render()
     {
-        $turmas          = Turma::with('curso')->orderBy('nome')->get();
+        $cursos          = Curso::where('ativo', true)->orderBy('nome')->get();
         $periodosLetivos = PeriodoLetivo::orderByDesc('ano')->get();
-        $grade           = [];
-        $horarios        = [];
-        $periodo         = null;
-        $qrCodeSvg       = '';
 
-        if ($this->turma_id && $this->periodo_letivo_id) {
-            $periodo = PeriodoLetivo::find($this->periodo_letivo_id);
-            $turma   = Turma::with('curso')->find($this->turma_id);
+        // Turmas filtradas por curso selecionado
+        $turmasQuery = Turma::with('curso')->where('ativo', true);
+        if ($this->curso_id) {
+            $turmasQuery->where('curso_id', $this->curso_id);
+        }
+        $turmas = $turmasQuery->orderBy('nome')->get();
+
+        $grades     = [];
+        $horarios   = collect();
+        $periodoObj = null;
+        $turmasAtivas = collect();
+        $qrCodes    = [];
+
+        if (!empty($this->turmasSelecionadas) && $this->periodo_letivo_id) {
+            $periodoObj = PeriodoLetivo::find($this->periodo_letivo_id);
 
             $aulas = Aula::with(['disciplina', 'professor', 'sala', 'horario'])
-                ->where('turma_id', $this->turma_id)
+                ->whereIn('turma_id', $this->turmasSelecionadas)
                 ->where('periodo_letivo_id', $this->periodo_letivo_id)
                 ->get();
 
             $horarios = $aulas->map(fn($a) => $a->horario)
-                ->unique('id')
-                ->sortBy('hora_inicio')
-                ->values();
+                ->unique('id')->sortBy('hora_inicio')->values();
 
             foreach ($aulas as $aula) {
-                $grade[$aula->horario_id][$aula->dia_semana] = $aula;
+                $grades[$aula->turma_id][$aula->horario_id][$aula->dia_semana] = $aula;
             }
 
-            // Gera QR Code SVG com o WhatsApp da coordenação
-            if ($turma && $turma->curso && $turma->curso->telefone_coord) {
-                $tel = preg_replace('/\D/', '', $turma->curso->telefone_coord);
-                if ($tel) {
-                    $qrCodeSvg = $this->gerarQrCodeSvg("https://wa.me/55{$tel}");
+            $turmasAtivas = Turma::with('curso')
+                ->whereIn('id', $this->turmasSelecionadas)
+                ->orderBy('nome')->get();
+
+            // QR codes por turma
+            foreach ($turmasAtivas as $turma) {
+                if ($turma->curso?->telefone_coord) {
+                    $tel = preg_replace('/\D/', '', $turma->curso->telefone_coord);
+                    if ($tel) {
+                        $qrCodes[$turma->id] = $this->gerarQrCodeSvg("https://wa.me/55{$tel}");
+                    }
                 }
             }
         }
 
         return view('livewire.grade-horarios', compact(
-            'turmas', 'periodosLetivos', 'grade', 'horarios', 'periodo', 'qrCodeSvg'
+            'cursos', 'turmas', 'periodosLetivos',
+            'grades', 'horarios', 'periodoObj', 'turmasAtivas', 'qrCodes'
         ));
     }
 }

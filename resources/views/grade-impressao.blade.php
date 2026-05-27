@@ -333,15 +333,15 @@
     <div style="background:{{ $corEscura }};padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:110px">
         @if($qrBase64)
         @php
-            // Strip XML declaration for inline SVG rendering
             $qrSvgClean = preg_replace('/<\?xml[^>]+\?>\s*/', '', $qrBase64);
             $isSvg = str_contains($qrSvgClean, '<svg');
         @endphp
         @if($isSvg)
-            <div style="width:90px;height:90px">{!! $qrSvgClean !!}</div>
+            <div style="background:white;padding:3px;border-radius:4px;line-height:0;width:90px;height:90px;overflow:hidden">{!! $qrSvgClean !!}</div>
         @else
-        <img src="{{ $qrBase64 }}" alt="QR WhatsApp" width="90" height="90"
-             style="display:block;border-radius:4px;background:white;padding:3px">
+            <img src="{{ $qrBase64 }}" alt="QR WhatsApp" width="90" height="90"
+                 style="display:block;border-radius:4px;background:white;padding:3px">
+        @endif
         @else
         <div id="qrcode" style="background:white;padding:3px;border-radius:4px;width:90px;height:90px"></div>
         @endif
@@ -357,17 +357,9 @@
 @endif
 
 <script>
-    window.addEventListener('load', function() {
-        setTimeout(function() { window.print(); }, 600);
-    });
-    window.addEventListener('beforeprint', function() {
-        var btn = document.getElementById('btnImprimir');
-        if(btn) btn.style.display = 'none';
-    });
-    window.addEventListener('afterprint', function() {
-        var btn = document.getElementById('btnImprimir');
-        if(btn) btn.style.display = 'block';
-    });
+    window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 500); });
+    window.addEventListener('beforeprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='none'; });
+    window.addEventListener('afterprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='block'; });
 </script>
 </body>
 </html>

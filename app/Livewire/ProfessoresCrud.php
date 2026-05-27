@@ -49,17 +49,10 @@ class ProfessoresCrud extends Component
             $emailRule .= '|unique:professores,email';
         }
 
-        $cpfRule = 'required|min:14';
-        if ($this->professorId) {
-            $cpfRule .= '|unique:professores,cpf,' . $this->professorId;
-        } else {
-            $cpfRule .= '|unique:professores,cpf';
-        }
-
         return [
             'nome'  => 'required|min:3|max:100',
             'email' => $emailRule,
-            'cpf'   => $cpfRule,
+            'cpf'   => 'required|min:14',
         ];
     }
 
@@ -79,8 +72,40 @@ class ProfessoresCrud extends Component
     {
         $this->cpf = $this->formatarCPF($value);
         $this->resetValidation('cpf');
-        if (strlen(preg_replace('/\D/', '', $this->cpf)) === 11) {
-            $this->validateOnly('cpf');
+        $digits = preg_replace('/\D/', '', $this->cpf);
+
+        if (strlen($digits) === 11) {
+            if (!$this->validarCPF($digits)) {
+                $this->addError('cpf', 'CPF inválido. Verifique os dígitos verificadores da Receita Federal.');
+            }
+            // Verificar unicidade
+            $existe = \App\Models\Professor::where('cpf', $this->cpf)
+                ->when($this->professorId, fn($q) => $q->where('id', '!=', $this->professorId))
+                ->exists();
+            if ($existe) {
+                $this->addError('cpf', 'Este CPF já está cadastrado.');
+            }
+        }
+    }
+
+    // Valida email ao sair do campo
+    public function updatedEmail(string $value): void
+    {
+        $this->resetValidation('email');
+        if (empty(trim($value))) {
+            $this->addError('email', 'O e-mail é obrigatório.');
+            return;
+        }
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            $this->addError('email', 'Informe um e-mail válido.');
+            return;
+        }
+        // Verificar unicidade
+        $existe = \App\Models\Professor::where('email', $value)
+            ->when($this->professorId, fn($q) => $q->where('id', '!=', $this->professorId))
+            ->exists();
+        if ($existe) {
+            $this->addError('email', 'Este e-mail já está cadastrado.');
         }
     }
 
@@ -88,6 +113,35 @@ class ProfessoresCrud extends Component
     {
         $this->telefone = $this->formatarTelefone($value);
         $this->resetValidation('telefone');
+    }
+
+
+    // ── Validação matemática CPF (Receita Federal) ───
+    private function validarCPF(string $cpf): bool
+    {
+        $n = preg_replace('/\D/', '', $cpf);
+        if (strlen($n) !== 11) return false;
+        if (preg_match('/^(\d)\1+$/', $n)) return false; // todos dígitos iguais
+
+        // Primeiro dígito verificador
+        $soma = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $soma += (int)$n[$i] * (10 - $i);
+        }
+        $resto   = $soma % 11;
+        $digito1 = $resto < 2 ? 0 : 11 - $resto;
+        if ((int)$n[9] !== $digito1) return false;
+
+        // Segundo dígito verificador
+        $soma = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $soma += (int)$n[$i] * (11 - $i);
+        }
+        $resto   = $soma % 11;
+        $digito2 = $resto < 2 ? 0 : 11 - $resto;
+        if ((int)$n[10] !== $digito2) return false;
+
+        return true;
     }
 
     private function formatarCPF(string $v): string
@@ -255,6 +309,43 @@ class ProfessoresCrud extends Component
 
     public function save(): void
     {
+        // Garantir que CPF e email estejam preenchidos
+        if (empty(trim($this->cpf))) {
+            $this->addError('cpf', 'O CPF é obrigatório.');
+            return;
+        }
+        if (empty(trim($this->email))) {
+            $this->addError('email', 'O e-mail é obrigatório.');
+            return;
+        }
+
+        // Validação matemática do CPF (não usa closure para compatibilidade com Livewire 3)
+        $cpfDigits = preg_replace('/\D/', '', $this->cpf);
+        if (!$this->validarCPF($cpfDigits)) {
+            $this->addError('cpf', 'CPF inválido. Verifique os dígitos verificadores da Receita Federal.');
+            return;
+        }
+        if (!filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            $this->addError('email', 'Informe um e-mail válido.');
+            return;
+        }
+
+        // Verificar unicidade manualmente (também não usa closure)
+        $cpfExiste = \App\Models\Professor::where('cpf', $this->cpf)
+            ->when($this->professorId, fn($q) => $q->where('id', '!=', $this->professorId))
+            ->exists();
+        if ($cpfExiste) {
+            $this->addError('cpf', 'Este CPF já está cadastrado.');
+            return;
+        }
+        $emailExiste = \App\Models\Professor::where('email', $this->email)
+            ->when($this->professorId, fn($q) => $q->where('id', '!=', $this->professorId))
+            ->exists();
+        if ($emailExiste) {
+            $this->addError('email', 'Este e-mail já está cadastrado.');
+            return;
+        }
+
         $this->validate();
 
         $isNovo = is_null($this->professorId);

@@ -20,7 +20,8 @@
         <div class="card-body">
             <div class="row g-2 align-items-center">
                 <div class="col-md-3">
-                    <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Buscar professor ou e-mail...">
+                    <input type="text" wire:model.live.debounce.300ms="search"
+                        class="form-control" placeholder="Buscar professor ou e-mail...">
                 </div>
                 <div class="col-md-3">
                     <select wire:model.live="curso_id" class="form-select">
@@ -58,7 +59,6 @@
                             <th>Disciplina</th>
                             <th>Curso</th>
                             <th>Turma</th>
-                            <th class="text-center">Dias</th>
                             <th class="text-center">Status</th>
                         </tr>
                     </thead>
@@ -70,11 +70,11 @@
                             $dispArr = is_array($disp) ? $disp : (is_string($disp) ? json_decode($disp, true) : []);
                             $dispGeral = collect($dispArr ?? [])->map(fn($d) => $dias[$d] ?? $d);
                         @endphp
+
                         @if($vinculos->isEmpty())
+                        {{-- Professor sem vínculos --}}
                         <tr class="{{ !$professor->ativo ? 'opacity-50' : '' }}">
-                            <td class="ps-3 fw-medium" rowspan="1">
-                                <div>{{ $professor->nome }}</div>
-                            </td>
+                            <td class="ps-3 fw-medium">{{ $professor->nome }}</td>
                             <td>
                                 <div style="font-size:12px">{{ $professor->email }}</div>
                                 @if($professor->telefone)<div class="text-muted" style="font-size:11px">{{ $professor->telefone }}</div>@endif
@@ -86,15 +86,16 @@
                                     @endforeach
                                 </div>
                             </td>
-                            <td><span class="text-muted small">Sem disciplinas vinculadas</span></td>
-                            <td>—</td>
-                            <td>—</td>
-                            <td class="text-center">—</td>
+                            <td colspan="3"><span class="text-muted small fst-italic">Sem disciplinas vinculadas</span></td>
                             <td class="text-center">
-                                <span class="badge {{ $professor->ativo ? 'bg-success' : 'bg-secondary' }}">{{ $professor->ativo ? 'Ativo' : 'Inativo' }}</span>
+                                <span class="badge {{ $professor->ativo ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ $professor->ativo ? 'Ativo' : 'Inativo' }}
+                                </span>
                             </td>
                         </tr>
+
                         @else
+                        {{-- Professor com vínculos --}}
                         @foreach($vinculos as $idx => $v)
                         <tr class="{{ !$professor->ativo ? 'opacity-50' : '' }}">
                             @if($idx === 0)
@@ -114,35 +115,32 @@
                                 </div>
                             </td>
                             @endif
+
                             <td class="fw-medium">{{ $v->disciplina->nome ?? '—' }}</td>
                             <td>
                                 @if($v->disciplina?->curso)
-                                <span class="badge fw-semibold" style="background:{{ $v->disciplina->curso->cor_grade ?? '#6c757d' }};color:white">
+                                <span class="badge fw-semibold"
+                                    style="background:{{ $v->disciplina->curso->cor_grade ?? '#6c757d' }};color:white">
                                     {{ $v->disciplina->curso->sigla }}
                                 </span>
                                 @else —
                                 @endif
                             </td>
                             <td>{{ $v->turma->nome ?? '—' }}</td>
-                            <td class="text-center">
-                                @php $dvArr = is_array($v->dias) ? $v->dias : (is_string($v->dias) ? json_decode($v->dias, true) : []);
-                                    $diasVinculo = collect($dvArr ?? [])->map(fn($d) => $dias[$d] ?? $d); @endphp
-                                <div class="d-flex gap-1 flex-wrap justify-content-center">
-                                    @foreach($diasVinculo as $d)
-                                    <span class="badge bg-primary" style="font-size:10px">{{ $d }}</span>
-                                    @endforeach
-                                </div>
-                            </td>
+
                             @if($idx === 0)
                             <td class="text-center" rowspan="{{ $vinculos->count() }}">
-                                <span class="badge {{ $professor->ativo ? 'bg-success' : 'bg-secondary' }}">{{ $professor->ativo ? 'Ativo' : 'Inativo' }}</span>
+                                <span class="badge {{ $professor->ativo ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ $professor->ativo ? 'Ativo' : 'Inativo' }}
+                                </span>
                             </td>
                             @endif
                         </tr>
                         @endforeach
                         @endif
+
                         @empty
-                        <tr><td colspan="8" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhum professor encontrado.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhum professor encontrado.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -156,10 +154,7 @@
     <style>
         @media print {
             .d-print-none { display: none !important; }
-            .card { box-shadow: none !important; border: 1px solid #ddd !important; }
-            .badge { border: 1px solid #ccc !important; }
-            body { font-size: 10px; }
-            .table { font-size: 9px; }
+            .card { box-shadow: none !important; }
         }
     </style>
 </div>

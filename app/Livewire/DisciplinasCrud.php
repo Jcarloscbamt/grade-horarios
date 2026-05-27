@@ -16,7 +16,9 @@ class DisciplinasCrud extends Component
     public string $curso_id      = '';
     public string $nome          = '';
     public string $carga_horaria = '';
-    public string $semestre_grade = '';
+    public string $semestre_grade    = '';
+    public string $tipo_sala          = '';
+    public string $bloco_preferencial = '';
 
     public bool $showModal  = false;
     public bool $showDelete = false;

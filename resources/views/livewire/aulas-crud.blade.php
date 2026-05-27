@@ -28,13 +28,39 @@
         </div>
     </div>
 
+    {{-- Barra de ações em lote --}}
+    @if(count($selecionados) > 0)
+    <div class="alert alert-warning d-flex justify-content-between align-items-center py-2 px-3 mb-3 border-warning">
+        <div>
+            <i class="bi bi-check2-square me-2"></i>
+            <strong>{{ count($selecionados) }}</strong> aula(s) selecionada(s)
+        </div>
+        <div class="d-flex gap-2">
+            <button wire:click="$set('selecionados', [])" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x me-1"></i>Limpar seleção
+            </button>
+            @hasrole('admin')
+            <button wire:click="confirmarDeleteLote" class="btn btn-sm btn-danger">
+                <i class="bi bi-trash me-1"></i>Excluir {{ count($selecionados) }} selecionada(s)
+            </button>
+            @endhasrole
+        </div>
+    </div>
+    @endif
+
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">Dia</th>
+                            @php $idsVisiveis = $aulas->pluck('id')->toArray(); @endphp
+                            <th class="ps-2" style="width:40px">
+                                <input type="checkbox" class="form-check-input"
+                                    wire:click="toggleTodos({{ json_encode($idsVisiveis) }})"
+                                    {{ count($selecionados) === count($idsVisiveis) && count($idsVisiveis) > 0 ? 'checked' : '' }}>
+                            </th>
+                            <th class="ps-1">Dia</th>
                             <th>Turma</th>
                             <th>Disciplina</th>
                             <th>Professor</th>
@@ -48,8 +74,13 @@
                     <tbody>
                         @php $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb']; @endphp
                         @forelse($aulas as $aula)
-                        <tr>
-                            <td class="ps-3" style="text-transform:uppercase">{{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}</td>
+                        <tr class="{{ in_array($aula->id, $selecionados) ? 'table-warning' : '' }}">
+                            <td class="ps-2" style="width:40px">
+                                <input type="checkbox" class="form-check-input"
+                                    wire:model.live="selecionados"
+                                    value="{{ $aula->id }}">
+                            </td>
+                            <td class="ps-1" style="text-transform:uppercase">{{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}</td>
                             <td style="text-transform:uppercase">{{ $aula->turma->nome }}</td>
                             <td>{{ Str::limit($aula->disciplina->nome, 30) }}</td>
                             <td style="text-transform:uppercase">{{ $aula->professor->nome }}</td>
@@ -67,7 +98,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="9" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma aula encontrada.</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma aula encontrada.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -75,6 +106,34 @@
         </div>
         @if($aulas->hasPages())<div class="card-footer bg-white border-top-0">{{ $aulas->links() }}</div>@endif
     </div>
+
+    {{-- Modal Confirmação Exclusão em Lote --}}
+    @if($showDeleteLote)
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.55)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center py-4 px-4">
+                    <div class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill" style="font-size:3rem"></i></div>
+                    <h5 class="fw-bold mb-2">Confirmar Exclusão em Lote</h5>
+                    <p class="text-muted mb-0">
+                        Você está prestes a excluir <strong>{{ count($selecionados) }} aula(s)</strong>.<br>
+                        <small class="text-danger">Esta ação não pode ser desfeita.</small>
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 justify-content-center pb-4 gap-2">
+                    <button type="button" class="btn btn-light px-4" wire:click="cancelarDeleteLote">
+                        <i class="bi bi-x me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger px-4" wire:click="deleteLote" wire:loading.attr="disabled">
+                        <span wire:loading wire:target="deleteLote" class="spinner-border spinner-border-sm me-1"></span>
+                        <i wire:loading.remove wire:target="deleteLote" class="bi bi-trash me-1"></i>
+                        Sim, excluir {{ count($selecionados) }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     @if($showModal)
     <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">
