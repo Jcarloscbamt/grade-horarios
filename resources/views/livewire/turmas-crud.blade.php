@@ -1,41 +1,39 @@
 {{-- resources/views/livewire/turmas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Turmas</h2>
-            <small class="text-muted">Gerenciamento de turmas por curso</small>
-        </div>
+        <div><h2 class="fw-bold mb-0">Turmas</h2><small class="text-muted">Gerenciamento de turmas por curso</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Turma</button>
         @endhasanyrole
     </div>
 
-    @if(session()->has('success'))
-        <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
-    @if(session()->has('error'))
-        <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
+    @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
+    @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
-            <div class="input-group">
-                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
-                    <option value="todos">Todos os campos</option>
-                    <option value="nome">Turma</option>
-                    <option value="curso">Curso</option>
-                    <option value="semestre">Semestre</option>
-                    <option value="periodo">Período</option>
-                </select>
-                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
-                    <i class="bi bi-search text-muted"></i>
-                </span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
-                @if($search)
-                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-                @endif
+            <div class="row g-2 align-items-center">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                            <option value="todos">Todos os campos</option>
+                            <option value="nome">Turma</option>
+                            <option value="curso">Curso</option>
+                            <option value="semestre">Semestre</option>
+                            <option value="periodo">Período</option>
+                        </select>
+                        <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                        @if($search)<button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar"><i class="bi bi-x-lg"></i></button>@endif
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select wire:model.live="filtroAtivo" class="form-select">
+                        <option value="todos">Todos os status</option>
+                        <option value="ativos">Somente Ativos</option>
+                        <option value="inativos">Somente Inativos</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -49,21 +47,39 @@
                         <th>Curso</th>
                         <th>Semestre Atual</th>
                         <th>Ano/Período</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center pe-3">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($turmas as $turma)
-                    <tr>
+                    <tr class="{{ !$turma->ativo ? 'opacity-50' : '' }}">
                         <td class="ps-3 fw-medium">{{ $turma->nome }}</td>
-                        <td><span class="badge bg-primary bg-opacity-10 text-primary">{{ $turma->curso->sigla }}</span></td>
+                        <td>
+                            <span class="badge fw-semibold"
+                                  style="background:{{ $turma->curso->cor_grade ?? '#6c757d' }};color:white">
+                                {{ $turma->curso->sigla }}
+                            </span>
+                        </td>
                         <td>{{ $turma->semestre }}º semestre</td>
                         <td>{{ $turma->ano }}/{{ $turma->periodo }}</td>
+                        <td class="text-center">
+                                @hasanyrole('admin|coordenador')
+                                <button wire:click="toggleAtivo({{ $turma->id }})"
+                                    class="btn btn-sm {{ $turma->ativo ? 'btn-success' : 'btn-secondary' }}"
+                                    title="{{ $turma->ativo ? 'Desativar' : 'Ativar' }}">
+                                    <i class="bi bi-circle-fill me-1" style="font-size:8px"></i>
+                                    {{ $turma->ativo ? 'Ativo' : 'Inativo' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $turma->ativo ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ $turma->ativo ? 'Ativo' : 'Inativo' }}
+                                </span>
+                                @endhasanyrole
+                            </td>
                         <td class="text-center pe-3">
                             @hasanyrole('admin|coordenador')
-
                             <button wire:click="edit({{ $turma->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
-
                             @endhasanyrole
                             @hasrole('admin')
                             <button wire:click="confirmDelete({{ $turma->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -71,14 +87,12 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="5" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma turma encontrada.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma turma encontrada.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        @if($turmas->hasPages())
-        <div class="card-footer bg-white border-top-0">{{ $turmas->links() }}</div>
-        @endif
+        @if($turmas->hasPages())<div class="card-footer bg-white border-top-0">{{ $turmas->links() }}</div>@endif
     </div>
 
     @if($showModal)
@@ -95,9 +109,7 @@
                             <label class="form-label fw-medium">Curso <span class="text-danger">*</span></label>
                             <select wire:model="curso_id" class="form-select @error('curso_id') is-invalid @enderror">
                                 <option value="">Selecione o curso...</option>
-                                @foreach($cursos as $curso)
-                                <option value="{{ $curso->id }}">{{ $curso->nome }} ({{ $curso->sigla }})</option>
-                                @endforeach
+                                @foreach($cursos as $curso)<option value="{{ $curso->id }}">{{ $curso->nome }} ({{ $curso->sigla }})</option>@endforeach
                             </select>
                             @error('curso_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -124,6 +136,15 @@
                                 <option value="2">2º Período</option>
                             </select>
                             @error('periodo') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" wire:model="ativo" id="ativoTurma">
+                                <label class="form-check-label fw-medium" for="ativoTurma">
+                                    Turma <strong>{{ $ativo ? 'Ativa' : 'Inativa' }}</strong>
+                                    <span class="badge ms-1 {{ $ativo ? 'bg-success' : 'bg-secondary' }}">{{ $ativo ? 'Ativa' : 'Inativa' }}</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>

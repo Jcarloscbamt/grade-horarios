@@ -1,40 +1,38 @@
 {{-- resources/views/livewire/salas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Salas</h2>
-            <small class="text-muted">Gerenciamento de salas e laboratórios</small>
-        </div>
+        <div><h2 class="fw-bold mb-0">Salas</h2><small class="text-muted">Gerenciamento de salas e laboratórios</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Sala</button>
         @endhasanyrole
     </div>
 
-    @if(session()->has('success'))
-        <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
-    @if(session()->has('error'))
-        <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
+    @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
+    @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
-            <div class="input-group">
-                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
-                    <option value="todos">Todos os campos</option>
-                    <option value="nome">Nome</option>
-                    <option value="tipo">Tipo</option>
-                    <option value="bloco">Bloco</option>
-                </select>
-                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
-                    <i class="bi bi-search text-muted"></i>
-                </span>
-                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
-                @if($search)
-                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-                @endif
+            <div class="row g-2 align-items-center">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                            <option value="todos">Todos os campos</option>
+                            <option value="nome">Nome</option>
+                            <option value="tipo">Tipo</option>
+                            <option value="bloco">Bloco</option>
+                        </select>
+                        <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                        @if($search)<button class="btn btn-outline-secondary" wire:click="$set('search', '')"><i class="bi bi-x-lg"></i></button>@endif
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select wire:model.live="filtroAtivo" class="form-select">
+                        <option value="todos">Todos os status</option>
+                        <option value="ativos">Somente Ativas</option>
+                        <option value="inativos">Somente Inativas</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -49,21 +47,34 @@
                             <th>Tipo</th>
                             <th>Bloco</th>
                             <th>Capacidade</th>
+                            <th class="text-center">Status</th>
                             <th class="text-center pe-3">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($salas as $sala)
-                        <tr>
+                        <tr class="{{ !$sala->ativo ? 'opacity-50' : '' }}">
                             <td class="ps-3">{{ $sala->nome }}</td>
                             <td style="text-transform:uppercase">{{ $sala->tipo }}</td>
                             <td>{{ $sala->bloco ?? '—' }}</td>
-                            <td style="text-transform:uppercase">{{ $sala->capacidade ? $sala->capacidade . ' alunos' : '—' }}</td>
+                            <td>{{ $sala->capacidade ? $sala->capacidade . ' alunos' : '—' }}</td>
+                            <td class="text-center">
+                                @hasanyrole('admin|coordenador')
+                                <button wire:click="toggleAtivo({{ $sala->id }})"
+                                    class="btn btn-sm {{ $sala->ativo ? 'btn-success' : 'btn-secondary' }}"
+                                    title="{{ $sala->ativo ? 'Desativar' : 'Ativar' }}">
+                                    <i class="bi bi-circle-fill me-1" style="font-size:8px"></i>
+                                    {{ $sala->ativo ? 'Ativo' : 'Inativo' }}
+                                </button>
+                                @else
+                                <span class="badge {{ $sala->ativo ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ $sala->ativo ? 'Ativo' : 'Inativo' }}
+                                </span>
+                                @endhasanyrole
+                            </td>
                             <td class="text-center pe-3">
                                 @hasanyrole('admin|coordenador')
-
                                 <button wire:click="edit({{ $sala->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
-
                                 @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $sala->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -71,15 +82,13 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma sala encontrada.</td></tr>
+                        <tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhuma sala encontrada.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-        @if($salas->hasPages())
-        <div class="card-footer bg-white border-top-0">{{ $salas->links() }}</div>
-        @endif
+        @if($salas->hasPages())<div class="card-footer bg-white border-top-0">{{ $salas->links() }}</div>@endif
     </div>
 
     @if($showModal)
@@ -105,15 +114,22 @@
                             <label class="form-label fw-medium">Tipo <span class="text-danger">*</span></label>
                             <select wire:model="tipo" class="form-select @error('tipo') is-invalid @enderror">
                                 <option value="">Selecione...</option>
-                                @foreach($tipos as $t)
-                                <option value="{{ $t }}">{{ $t }}</option>
-                                @endforeach
+                                @foreach($tipos as $t)<option value="{{ $t }}">{{ $t }}</option>@endforeach
                             </select>
                             @error('tipo') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Capacidade</label>
                             <input type="number" wire:model="capacidade" class="form-control" placeholder="Nº de alunos" min="1">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" wire:model="ativo" id="ativoSala">
+                                <label class="form-check-label fw-medium" for="ativoSala">
+                                    Sala <strong>{{ $ativo ? 'Ativa' : 'Inativa' }}</strong>
+                                    <span class="badge ms-1 {{ $ativo ? 'bg-success' : 'bg-secondary' }}">{{ $ativo ? 'Ativa' : 'Inativa' }}</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -135,13 +151,11 @@
                 <div class="modal-body text-center py-4">
                     <div class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill" style="font-size:3rem"></i></div>
                     <h5 class="fw-bold mb-2">Confirmar Exclusão</h5>
-                    <p class="text-muted mb-0">Tem certeza que deseja excluir esta sala?<br><small>Esta ação não pode ser desfeita.</small></p>
+                    <p class="text-muted mb-0">Tem certeza que deseja excluir esta sala?</p>
                 </div>
                 <div class="modal-footer border-top-0 justify-content-center pb-4">
                     <button type="button" class="btn btn-light px-4" wire:click="closeModal">Cancelar</button>
-                    <button type="button" class="btn btn-danger px-4" wire:click="delete" wire:loading.attr="disabled">
-                        <span wire:loading wire:target="delete" class="spinner-border spinner-border-sm me-1"></span>Sim, excluir
-                    </button>
+                    <button type="button" class="btn btn-danger px-4" wire:click="delete" wire:loading.attr="disabled">Sim, excluir</button>
                 </div>
             </div>
         </div>

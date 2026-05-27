@@ -1,5 +1,5 @@
 <?php
-// app/Models/User.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'password_change_required',
+        'ativo',
     ];
 
     protected $hidden = [
@@ -29,6 +30,7 @@ class User extends Authenticatable
             'email_verified_at'        => 'datetime',
             'password'                 => 'hashed',
             'password_change_required' => 'boolean',
+        'ativo' => 'boolean',
         ];
     }
 }

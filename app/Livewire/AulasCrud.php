@@ -11,7 +11,7 @@ class AulasCrud extends Component
 {
     use WithPagination;
 
-    public ?int $aulaId          = null;
+    public ?int $aulaId           = null;
     public string $turma_id         = '';
     public string $disciplina_id    = '';
     public string $professor_id     = '';
@@ -30,12 +30,12 @@ class AulasCrud extends Component
 
     public array $dias = [
         1 => 'Segunda-feira', 2 => 'Terça-feira', 3 => 'Quarta-feira',
-        4 => 'Quinta-feira',  5 => 'Sexta-feira',  6 => 'Sábado',
+        4 => 'Quinta-feira',  5 => 'Sexta-feira',
     ];
 
     public array $diasCurtos = [
         1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta',
-        4 => 'Quinta',  5 => 'Sexta', 6 => 'Sábado',
+        4 => 'Quinta',  5 => 'Sexta',
     ];
 
     public array $modalidades = ['presencial', 'online', 'híbrido'];
@@ -51,24 +51,35 @@ class AulasCrud extends Component
             'sala_id'           => 'nullable',
             'horario_id'        => 'required_without:todosHorarios',
             'periodo_letivo_id' => 'required',
-            'dia_semana'        => 'required|integer|min:1|max:6',
+            'dia_semana'        => 'required|integer|min:1|max:5',
             'modalidade'        => 'required',
         ];
     }
 
     protected array $messages = [
-        'turma_id.required'          => 'Selecione a turma.',
-        'disciplina_id.required'     => 'Selecione a disciplina.',
-        'professor_id.required'      => 'Selecione o professor.',
-        'horario_id.required_without'=> 'Selecione o horário.',
-        'periodo_letivo_id.required' => 'Selecione o período letivo.',
-        'dia_semana.required'        => 'Selecione o dia da semana.',
-        'modalidade.required'        => 'Selecione a modalidade.',
+        'turma_id.required'           => 'Selecione a turma.',
+        'disciplina_id.required'      => 'Selecione a disciplina.',
+        'professor_id.required'       => 'Selecione o professor.',
+        'horario_id.required_without' => 'Selecione o horário.',
+        'periodo_letivo_id.required'  => 'Selecione o período letivo.',
+        'dia_semana.required'         => 'Selecione o dia da semana.',
+        'modalidade.required'         => 'Selecione a modalidade.',
     ];
+
+    // Quando turma ou disciplina mudam, reseta o professor selecionado
+    public function updatedTurmaId(): void
+    {
+        $this->professor_id = '';
+    }
+
+    public function updatedDisciplinaId(): void
+    {
+        $this->professor_id = '';
+    }
 
     public function create(): void
     {
-        $this->resetForm();
+        $this->limparFormulario();
         $this->modalTitle = 'Nova Aula';
         $this->showModal  = true;
     }
@@ -76,24 +87,24 @@ class AulasCrud extends Component
     public function edit(int $id): void
     {
         $a = Aula::findOrFail($id);
-        $this->aulaId           = $a->id;
-        $this->turma_id         = $a->turma_id;
-        $this->disciplina_id    = $a->disciplina_id;
-        $this->professor_id     = $a->professor_id;
-        $this->sala_id          = $a->sala_id ?? '';
-        $this->horario_id       = $a->horario_id;
+        $this->aulaId            = $a->id;
+        $this->turma_id          = $a->turma_id;
+        $this->disciplina_id     = $a->disciplina_id;
+        $this->professor_id      = $a->professor_id;
+        $this->sala_id           = $a->sala_id ?? '';
+        $this->horario_id        = $a->horario_id;
         $this->periodo_letivo_id = $a->periodo_letivo_id;
-        $this->dia_semana       = $a->dia_semana;
-        $this->modalidade       = $a->modalidade;
-        $this->modalTitle       = 'Editar Aula';
-        $this->showModal        = true;
+        $this->dia_semana        = $a->dia_semana;
+        $this->modalidade        = $a->modalidade;
+        $this->modalTitle        = 'Editar Aula';
+        $this->showModal         = true;
     }
 
     public function save(): void
     {
         $erros = [];
 
-        // Verifica duplicidade
+        // Verificar duplicidade
         $query = Aula::where('turma_id', $this->turma_id)
             ->where('disciplina_id', $this->disciplina_id)
             ->where('periodo_letivo_id', $this->periodo_letivo_id)
@@ -104,6 +115,17 @@ class AulasCrud extends Component
         }
         if ($query->exists()) {
             $erros[] = 'Já existe uma aula cadastrada com esta combinação.';
+        }
+
+        // Verificar se professor está vinculado à disciplina+turma
+        if ($this->professor_id && $this->disciplina_id && $this->turma_id) {
+            $vinculado = \App\Models\ProfessorDisciplina::where('professor_id', $this->professor_id)
+                ->where('disciplina_id', $this->disciplina_id)
+                ->where('turma_id', $this->turma_id)
+                ->exists();
+            if (!$vinculado) {
+                $erros[] = 'Este professor não está vinculado a esta disciplina e turma. Configure no cadastro de Professores.';
+            }
         }
 
         // Conflito professor
@@ -129,9 +151,7 @@ class AulasCrud extends Component
         }
 
         if ($erros) {
-            foreach ($erros as $e) {
-                $this->addError('geral', $e);
-            }
+            foreach ($erros as $e) $this->addError('geral', $e);
             return;
         }
 
@@ -143,56 +163,31 @@ class AulasCrud extends Component
             $horarios = Horario::where('tipo', '!=', 'intervalo')->get();
             $criados  = 0;
             foreach ($horarios as $h) {
-                [$aula, $novo] = Aula::firstOrCreate(
-                    [
-                        'turma_id'          => $this->turma_id,
-                        'disciplina_id'     => $this->disciplina_id,
-                        'horario_id'        => $h->id,
-                        'dia_semana'        => $this->dia_semana,
-                        'periodo_letivo_id' => $this->periodo_letivo_id,
-                    ],
-                    [
-                        'professor_id' => $this->professor_id,
-                        'sala_id'      => $this->sala_id ?: null,
-                        'modalidade'   => $this->modalidade,
-                    ]
+                [,$novo] = Aula::firstOrCreate(
+                    ['turma_id'=>$this->turma_id,'disciplina_id'=>$this->disciplina_id,'horario_id'=>$h->id,'dia_semana'=>$this->dia_semana,'periodo_letivo_id'=>$this->periodo_letivo_id],
+                    ['professor_id'=>$this->professor_id,'sala_id'=>$this->sala_id?:null,'modalidade'=>$this->modalidade]
                 );
                 if ($novo) $criados++;
             }
-
-            // Log
-            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
-            Log::registrar('criou', 'Aulas', "Lote de aulas: {$criados} aulas criadas - " . ($dias[$this->dia_semana] ?? ''));
-
+            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex'];
+            Log::registrar('criou', 'Aulas', "Lote: {$criados} aulas criadas - " . ($dias[$this->dia_semana] ?? ''));
             $this->showModal = false;
-            $this->resetForm();
+            $this->limparFormulario();
             session()->flash('success', "{$criados} aula(s) cadastrada(s) com sucesso!");
-
         } else {
             Aula::updateOrCreate(
                 ['id' => $this->aulaId],
                 [
-                    'turma_id'          => $this->turma_id,
-                    'disciplina_id'     => $this->disciplina_id,
-                    'professor_id'      => $this->professor_id,
-                    'sala_id'           => $this->sala_id ?: null,
-                    'horario_id'        => $this->horario_id,
-                    'periodo_letivo_id' => $this->periodo_letivo_id,
-                    'dia_semana'        => $this->dia_semana,
-                    'modalidade'        => $this->modalidade,
+                    'turma_id'=>$this->turma_id, 'disciplina_id'=>$this->disciplina_id,
+                    'professor_id'=>$this->professor_id, 'sala_id'=>$this->sala_id?:null,
+                    'horario_id'=>$this->horario_id, 'periodo_letivo_id'=>$this->periodo_letivo_id,
+                    'dia_semana'=>$this->dia_semana, 'modalidade'=>$this->modalidade,
                 ]
             );
-
-            // Log
-            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
-            Log::registrar(
-                $isNovo ? 'criou' : 'editou',
-                'Aulas',
-                ($isNovo ? 'Nova aula: ' : 'Editou aula: ') . ($dias[$this->dia_semana] ?? '')
-            );
-
+            $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex'];
+            Log::registrar($isNovo?'criou':'editou', 'Aulas', ($isNovo?'Nova aula: ':'Editou aula: ').($dias[$this->dia_semana]??''));
             $this->showModal = false;
-            $this->resetForm();
+            $this->limparFormulario();
             session()->flash('success', $isNovo ? 'Aula cadastrada com sucesso!' : 'Aula atualizada com sucesso!');
         }
     }
@@ -206,12 +201,11 @@ class AulasCrud extends Component
     public function delete(): void
     {
         $aula = Aula::with(['disciplina','turma'])->findOrFail($this->aulaId);
-        $descricao = 'Excluiu aula: ' . ($aula->disciplina->nome ?? '') . ' - ' . ($aula->turma->nome ?? '');
+        $desc = 'Excluiu aula: ' . ($aula->disciplina->nome ?? '') . ' - ' . ($aula->turma->nome ?? '');
         $aula->delete();
-        // Log da ação
-        Log::registrar('excluiu', 'Aulas', $descricao);
+        Log::registrar('excluiu', 'Aulas', $desc);
         $this->showDelete = false;
-        $this->resetForm();
+        $this->limparFormulario();
         session()->flash('success', 'Aula excluída com sucesso!');
     }
 
@@ -219,15 +213,15 @@ class AulasCrud extends Component
     {
         $this->showModal  = false;
         $this->showDelete = false;
-        $this->resetForm();
+        $this->limparFormulario();
     }
 
-    private function resetForm(): void
+    private function limparFormulario(): void
     {
         $this->aulaId = null;
         $this->turma_id = $this->disciplina_id = $this->professor_id = '';
         $this->sala_id = $this->horario_id = $this->periodo_letivo_id = '';
-        $this->dia_semana = $this->modalidade = '';
+        $this->dia_semana = '';
         $this->modalidade = 'presencial';
         $this->todosHorarios = false;
         $this->resetValidation();
@@ -238,50 +232,59 @@ class AulasCrud extends Component
 
     public function render()
     {
-        $diasNomes = [
-            1=>'Segunda', 2=>'Terça', 3=>'Quarta',
-            4=>'Quinta',  5=>'Sexta', 6=>'Sábado',
-        ];
-
+        $diasNomes = [1=>'Segunda',2=>'Terça',3=>'Quarta',4=>'Quinta',5=>'Sexta'];
         $diaNumero = null;
         if ($this->search) {
             foreach ($diasNomes as $num => $nome) {
-                if (stripos($nome, $this->search) !== false) {
-                    $diaNumero = $num;
-                    break;
-                }
+                if (stripos($nome, $this->search) !== false) { $diaNumero = $num; break; }
             }
         }
 
-        $aulas = Aula::with(['turma', 'disciplina', 'professor', 'sala', 'horario', 'periodoLetivo'])
+        $aulas = Aula::with(['turma','disciplina','professor','sala','horario','periodoLetivo'])
             ->when($this->search, function($q) use ($diaNumero) {
                 $s = $this->search;
                 match($this->filtro) {
-                    'turma'      => $q->whereHas('turma', fn($q) => $q->where('nome', 'like', "%$s%")),
-                    'disciplina' => $q->whereHas('disciplina', fn($q) => $q->where('nome', 'like', "%$s%")),
-                    'professor'  => $q->whereHas('professor', fn($q) => $q->where('nome', 'like', "%$s%")),
-                    'sala'       => $q->whereHas('sala', fn($q) => $q->where('nome', 'like', "%$s%")),
-                    'dia'        => $diaNumero ? $q->where('dia_semana', $diaNumero) : $q->whereRaw('0=1'),
-                    default      => $q->whereHas('turma', fn($q) => $q->where('nome', 'like', "%$s%"))
-                                      ->orWhereHas('disciplina', fn($q) => $q->where('nome', 'like', "%$s%"))
-                                      ->orWhereHas('professor', fn($q) => $q->where('nome', 'like', "%$s%"))
-                                      ->orWhereHas('sala', fn($q) => $q->where('nome', 'like', "%$s%"))
-                                      ->orWhere(fn($q) => $diaNumero ? $q->where('dia_semana', $diaNumero) : null),
+                    'turma'      => $q->whereHas('turma', fn($q)=>$q->where('nome','like',"%$s%")),
+                    'disciplina' => $q->whereHas('disciplina', fn($q)=>$q->where('nome','like',"%$s%")),
+                    'professor'  => $q->whereHas('professor', fn($q)=>$q->where('nome','like',"%$s%")),
+                    'sala'       => $q->whereHas('sala', fn($q)=>$q->where('nome','like',"%$s%")),
+                    'dia'        => $diaNumero ? $q->where('dia_semana',$diaNumero) : $q->whereRaw('0=1'),
+                    default      => $q->whereHas('turma',fn($q)=>$q->where('nome','like',"%$s%"))
+                                      ->orWhereHas('disciplina',fn($q)=>$q->where('nome','like',"%$s%"))
+                                      ->orWhereHas('professor',fn($q)=>$q->where('nome','like',"%$s%")),
                 };
             })
             ->orderBy('dia_semana')
             ->paginate(15);
 
-        $turmas          = Turma::orderBy('nome')->get();
-        $disciplinas     = Disciplina::orderBy('nome')->get();
-        $professores     = Professor::orderBy('nome')->get();
-        $salas           = Sala::orderBy('nome')->get();
+        $turmas          = Turma::where('ativo', true)->orderBy('nome')->get();
+        $disciplinas     = Disciplina::where('ativo', true)->orderBy('nome')->get();
+        $salas           = Sala::where('ativo', true)->orderBy('nome')->get();
         $horarios        = Horario::orderBy('hora_inicio')->get();
         $periodosLetivos = PeriodoLetivo::orderByDesc('ano')->get();
 
+        // Professores filtrados por disciplina + turma
+        $professoresFiltrados = collect();
+        if ($this->turma_id && $this->disciplina_id) {
+            $diasLabels = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex'];
+            $professoresFiltrados = Professor::where('ativo', true)
+                ->whereHas('disciplinasTurmas', fn($q) =>
+                    $q->where('disciplina_id', $this->disciplina_id)
+                      ->where('turma_id', $this->turma_id)
+                )
+                ->orderBy('nome')
+                ->get()
+                ->map(function($p) use ($diasLabels) {
+                    $disp = collect(is_array($p->disponibilidade) ? $p->disponibilidade : json_decode($p->disponibilidade ?? '[]', true))
+                        ->map(fn($d) => $diasLabels[$d] ?? $d)->implode(', ');
+                    $p->dias_disponiveis = $disp;
+                    return $p;
+                });
+        }
+
         return view('livewire.aulas-crud', compact(
-            'aulas', 'turmas', 'disciplinas', 'professores',
-            'salas', 'horarios', 'periodosLetivos'
+            'aulas', 'turmas', 'disciplinas', 'salas',
+            'horarios', 'periodosLetivos', 'professoresFiltrados'
         ));
     }
 }

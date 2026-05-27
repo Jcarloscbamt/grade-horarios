@@ -47,6 +47,16 @@
     </div>
 
     {{-- Tabela --}}
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body py-2">
+            <select wire:model.live="filtroAtivo" class="form-select" style="max-width:220px">
+                <option value="todos">Todos os status</option>
+                <option value="ativos">Somente Ativos</option>
+                <option value="inativos">Somente Inativos</option>
+            </select>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table table-hover align-middle mb-0">
@@ -56,12 +66,13 @@
                         <th>E-mail</th>
                         <th>Perfil</th>
                         <th>Cadastrado em</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center pe-3">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($usuarios as $usuario)
-                    <tr>
+                    <tr class="{{ !($usuario->ativo ?? true) ? 'opacity-50' : '' }}">
                         <td class="ps-3">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
@@ -92,6 +103,14 @@
                             @endif
                         </td>
                         <td>{{ $usuario->created_at->format('d/m/Y') }}</td>
+                        <td class="text-center">
+                            <button wire:click="toggleAtivo({{ $usuario->id }})"
+                                class="btn btn-sm {{ ($usuario->ativo ?? true) ? 'btn-success' : 'btn-secondary' }}"
+                                title="{{ ($usuario->ativo ?? true) ? 'Desativar' : 'Ativar' }}">
+                                <i class="bi bi-circle-fill me-1" style="font-size:8px"></i>
+                                {{ ($usuario->ativo ?? true) ? 'Ativo' : 'Inativo' }}
+                            </button>
+                        </td>
                         <td class="text-center pe-3">
                             <button wire:click="edit({{ $usuario->id }})"
                                 class="btn btn-sm btn-outline-secondary me-1" title="Editar">
@@ -107,7 +126,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-5">
+                        <td colspan="6" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-3 d-block mb-2"></i>
                             Nenhum usuário encontrado.
                         </td>

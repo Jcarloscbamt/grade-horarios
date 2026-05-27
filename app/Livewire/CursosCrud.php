@@ -22,7 +22,9 @@ class CursosCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search  = '';
+    public bool $ativo      = true;
+    public string $search     = '';
+    public string $filtroAtivo = 'todos';
     public string $filtro  = 'todos';
     public string $modalTitle = '';
 
@@ -101,6 +103,7 @@ class CursosCrud extends Component
         $this->telefone_coord = $curso->telefone_coord ?? '';
         $this->cor_grade      = $curso->cor_grade ?? '#E30613';
         $this->modalTitle     = 'Editar Curso';
+        $this->ativo       = (bool) $curso->ativo;
         $this->showModal      = true;
     }
 
@@ -133,6 +136,17 @@ class CursosCrud extends Component
         $this->showModal = false;
         $this->resetForm();
         session()->flash('success', $isNovo ? 'Curso cadastrado com sucesso!' : 'Curso atualizado com sucesso!');
+    }
+
+
+    public function toggleAtivo(int $id): void
+    {
+        $item = \App\Models\Curso::findOrFail($id);
+        $item->ativo = !$item->ativo;
+        $item->save();
+        $status = $item->ativo ? 'ativado' : 'desativado';
+        session()->flash('success', 'Curso ' . $status . ' com sucesso!');
+        \App\Models\Log::registrar('editou', 'Cursos', 'Curso ' . $status . ': ' . $item->nome);
     }
 
     public function confirmDelete(int $id): void
@@ -188,6 +202,8 @@ class CursosCrud extends Component
     public function render()
     {
         $cursos = Curso::query()
+            ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
+            ->when($this->filtroAtivo === 'inativos', fn($q) => $q->where('ativo', false))
             ->when($this->search, function($q) {
                 $s = $this->search;
                 match($this->filtro) {

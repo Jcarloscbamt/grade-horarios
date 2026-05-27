@@ -22,6 +22,7 @@ class UsuariosCrud extends Component
     public bool   $showModal   = false;
     public bool   $showDelete  = false;
     public string $search      = '';
+    public string $filtroAtivo = 'todos';
     public string $modalTitle  = '';
 
     protected function rules(): array
@@ -99,6 +100,28 @@ class UsuariosCrud extends Component
         session()->flash('success', $isNovo ? 'Usuário cadastrado com sucesso!' : 'Usuário atualizado com sucesso!');
     }
 
+
+    public function toggleAtivo(int $id): void
+    {
+        // Não permite desativar o próprio usuário logado
+        if ($id === auth()->id()) {
+            session()->flash('error', 'Você não pode desativar seu próprio usuário.');
+            return;
+        }
+
+        $user   = \App\Models\User::findOrFail($id);
+        $novoStatus = !((bool) $user->ativo);
+
+        // Usa DB direto para evitar problemas de cast
+        \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', $id)
+            ->update(['ativo' => $novoStatus, 'updated_at' => now()]);
+
+        $status = $novoStatus ? 'ativado' : 'desativado';
+        session()->flash('success', 'Usuário ' . $status . ' com sucesso!');
+        \App\Models\Log::registrar('editou', 'Usuários', 'Usuário ' . $status . ': ' . $user->name);
+    }
+
     public function confirmDelete(int $id): void
     {
         if ($id === auth()->id()) {
@@ -147,6 +170,8 @@ class UsuariosCrud extends Component
         $busca = $this->search;
 
         $usuarios = User::with('roles')
+            ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
+            ->when($this->filtroAtivo === 'inativos', fn($q) => $q->where('ativo', false))
             ->when($busca, fn($q) =>
                 $q->where('name', 'like', "%{$busca}%")
                   ->orWhere('email', 'like', "%{$busca}%")

@@ -21,7 +21,9 @@ class TurmasCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search  = '';
+    public bool $ativo      = true;
+    public string $search     = '';
+    public string $filtroAtivo = 'todos';
     public string $filtro  = 'todos';
     public string $modalTitle = '';
 
@@ -62,6 +64,7 @@ class TurmasCrud extends Component
         $this->ano      = $t->ano;
         $this->periodo  = $t->periodo;
         $this->modalTitle = 'Editar Turma';
+        $this->ativo       = (bool) $t->ativo;
         $this->showModal  = true;
     }
 
@@ -82,7 +85,6 @@ class TurmasCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
-
         // Log da ação
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
@@ -90,6 +92,17 @@ class TurmasCrud extends Component
             ($isNovo ? 'Novo: ' : 'Editou: ') . $this->nome
         );
         session()->flash('success', $this->turmaId ? 'Turma atualizada com sucesso!' : 'Turma cadastrada com sucesso!');
+    }
+
+
+    public function toggleAtivo(int $id): void
+    {
+        $item = \App\Models\Turma::findOrFail($id);
+        $item->ativo = !$item->ativo;
+        $item->save();
+        $status = $item->ativo ? 'ativado' : 'desativado';
+        session()->flash('success', 'Turma ' . $status . ' com sucesso!');
+        \App\Models\Log::registrar('editou', 'Turmas', 'Turma ' . $status . ': ' . $item->nome);
     }
 
     public function confirmDelete(int $id): void
@@ -134,6 +147,8 @@ class TurmasCrud extends Component
     public function render()
     {
         $turmas = Turma::with('curso')
+            ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
+            ->when($this->filtroAtivo === 'inativos', fn($q) => $q->where('ativo', false))
             ->when($this->search, function($q) {
                 $s = $this->search;
                 match($this->filtro) {

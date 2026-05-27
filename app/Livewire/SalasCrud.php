@@ -19,7 +19,9 @@ class SalasCrud extends Component
 
     public bool $showModal  = false;
     public bool $showDelete = false;
-    public string $search  = '';
+    public bool $ativo      = true;
+    public string $search     = '';
+    public string $filtroAtivo = 'todos';
     public string $filtro  = 'todos';
     public string $modalTitle = '';
 
@@ -57,6 +59,7 @@ class SalasCrud extends Component
         $this->capacidade = $s->capacidade ?? '';
         $this->bloco      = $s->bloco ?? '';
         $this->modalTitle = 'Editar Sala';
+        $this->ativo       = (bool) $s->ativo;
         $this->showModal  = true;
     }
 
@@ -76,15 +79,24 @@ class SalasCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
-
         // Log da ação
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
             'Salas',
             ($isNovo ? 'Novo: ' : 'Editou: ') . $this->nome
         );
-        
         session()->flash('success', $this->salaId ? 'Sala atualizada com sucesso!' : 'Sala cadastrada com sucesso!');
+    }
+
+
+    public function toggleAtivo(int $id): void
+    {
+        $item = \App\Models\Sala::findOrFail($id);
+        $item->ativo = !$item->ativo;
+        $item->save();
+        $status = $item->ativo ? 'ativado' : 'desativado';
+        session()->flash('success', 'Sala ' . $status . ' com sucesso!');
+        \App\Models\Log::registrar('editou', 'Salas', 'Sala ' . $status . ': ' . $item->nome);
     }
 
     public function confirmDelete(int $id): void
@@ -129,6 +141,8 @@ class SalasCrud extends Component
     public function render()
     {
         $salas = Sala::query()
+            ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
+            ->when($this->filtroAtivo === 'inativos', fn($q) => $q->where('ativo', false))
             ->when($this->search, function($q) {
                 $s = $this->search;
                 match($this->filtro) {

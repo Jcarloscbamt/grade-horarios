@@ -199,7 +199,7 @@
 </head>
 <body>
 
-<button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir / Salvar PDF</button>
+<button class="btn-imprimir" id="btnImprimir" onclick="window.print()">&#128424; Imprimir / Salvar PDF</button>
 
 <div class="header-grade">
     <div>
@@ -332,6 +332,14 @@
     @if($whatsappLink)
     <div style="background:{{ $corEscura }};padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:110px">
         @if($qrBase64)
+        @php
+            // Strip XML declaration for inline SVG rendering
+            $qrSvgClean = preg_replace('/<\?xml[^>]+\?>\s*/', '', $qrBase64);
+            $isSvg = str_contains($qrSvgClean, '<svg');
+        @endphp
+        @if($isSvg)
+            <div style="width:90px;height:90px">{!! $qrSvgClean !!}</div>
+        @else
         <img src="{{ $qrBase64 }}" alt="QR WhatsApp" width="90" height="90"
              style="display:block;border-radius:4px;background:white;padding:3px">
         @else
@@ -348,5 +356,18 @@
 @endif
 @endif
 
+<script>
+    window.addEventListener('load', function() {
+        setTimeout(function() { window.print(); }, 600);
+    });
+    window.addEventListener('beforeprint', function() {
+        var btn = document.getElementById('btnImprimir');
+        if(btn) btn.style.display = 'none';
+    });
+    window.addEventListener('afterprint', function() {
+        var btn = document.getElementById('btnImprimir');
+        if(btn) btn.style.display = 'block';
+    });
+</script>
 </body>
 </html>

@@ -1,21 +1,14 @@
 {{-- resources/views/livewire/aulas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-0">Aulas</h2>
-            <small class="text-muted">Grade de horários — aulas por turma e período letivo</small>
-        </div>
+        <div><h2 class="fw-bold mb-0">Aulas</h2><small class="text-muted">Grade de horários — aulas por turma e período letivo</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Aula</button>
         @endhasanyrole
     </div>
 
-    @if(session()->has('success'))
-        <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
-    @if(session()->has('error'))
-        <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    @endif
+    @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
+    @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body py-2">
@@ -28,15 +21,9 @@
                     <option value="sala">Sala</option>
                     <option value="dia">Dia da semana</option>
                 </select>
-                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none">
-                    <i class="bi bi-search text-muted"></i>
-                </span>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
-                @if($search)
-                <button class="btn btn-outline-secondary" wire:click="$set('search', '')" title="Limpar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-                @endif
+                @if($search)<button class="btn btn-outline-secondary" wire:click="$set('search', '')"><i class="bi bi-x-lg"></i></button>@endif
             </div>
         </div>
     </div>
@@ -59,9 +46,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                        $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb'];
-                        @endphp
+                        @php $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb']; @endphp
                         @forelse($aulas as $aula)
                         <tr>
                             <td class="ps-3" style="text-transform:uppercase">{{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}</td>
@@ -74,9 +59,7 @@
                             <td style="text-transform:uppercase">{{ $aula->periodoLetivo->nome }}</td>
                             <td class="text-center pe-3">
                                 @hasanyrole('admin|coordenador')
-
                                 <button wire:click="edit({{ $aula->id }})" class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i></button>
-
                                 @endhasanyrole
                                 @hasrole('admin')
                                 <button wire:click="confirmDelete({{ $aula->id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -90,9 +73,7 @@
                 </table>
             </div>
         </div>
-        @if($aulas->hasPages())
-        <div class="card-footer bg-white border-top-0">{{ $aulas->links() }}</div>
-        @endif
+        @if($aulas->hasPages())<div class="card-footer bg-white border-top-0">{{ $aulas->links() }}</div>@endif
     </div>
 
     @if($showModal)
@@ -104,28 +85,19 @@
                     <button type="button" class="btn-close" wire:click="closeModal"></button>
                 </div>
                 <div class="modal-body">
-
-                    {{-- Alerta de erros de conflito/duplicidade --}}
                     @if($errors->has('geral'))
                     <div class="alert alert-danger py-2 mb-3">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Não foi possível salvar:</strong>
-                        <ul class="mb-0 mt-1 ps-3">
-                            @foreach($errors->get('geral') as $erro)
-                                <li style="font-size:13px">{{ $erro }}</li>
-                            @endforeach
-                        </ul>
+                        <i class="bi bi-exclamation-triangle me-2"></i><strong>Não foi possível salvar:</strong>
+                        <ul class="mb-0 mt-1 ps-3">@foreach($errors->get('geral') as $erro)<li style="font-size:13px">{{ $erro }}</li>@endforeach</ul>
                     </div>
                     @endif
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Turma <span class="text-danger">*</span></label>
-                            <select wire:model="turma_id" class="form-select @error('turma_id') is-invalid @enderror">
+                            <select wire:model.live="turma_id" class="form-select @error('turma_id') is-invalid @enderror">
                                 <option value="">Selecione a turma...</option>
-                                @foreach($turmas as $turma)
-                                <option value="{{ $turma->id }}">{{ $turma->nome }}</option>
-                                @endforeach
+                                @foreach($turmas as $turma)<option value="{{ $turma->id }}">{{ $turma->nome }}</option>@endforeach
                             </select>
                             @error('turma_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -133,71 +105,79 @@
                             <label class="form-label fw-medium">Período Letivo <span class="text-danger">*</span></label>
                             <select wire:model="periodo_letivo_id" class="form-select @error('periodo_letivo_id') is-invalid @enderror">
                                 <option value="">Selecione o período...</option>
-                                @foreach($periodosLetivos as $periodo)
-                                <option value="{{ $periodo->id }}">{{ $periodo->nome }}{{ $periodo->ativo ? ' (ativo)' : '' }}</option>
-                                @endforeach
+                                @foreach($periodosLetivos as $periodo)<option value="{{ $periodo->id }}">{{ $periodo->nome }}{{ $periodo->ativo ? ' (ativo)' : '' }}</option>@endforeach
                             </select>
                             @error('periodo_letivo_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Disciplina <span class="text-danger">*</span></label>
-                            <select wire:model="disciplina_id" class="form-select @error('disciplina_id') is-invalid @enderror">
+                            <select wire:model.live="disciplina_id" class="form-select @error('disciplina_id') is-invalid @enderror">
                                 <option value="">Selecione a disciplina...</option>
-                                @foreach($disciplinas as $disciplina)
-                                <option value="{{ $disciplina->id }}">{{ $disciplina->nome }}</option>
-                                @endforeach
+                                @foreach($disciplinas as $disciplina)<option value="{{ $disciplina->id }}">{{ $disciplina->nome }}</option>@endforeach
                             </select>
                             @error('disciplina_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+
+                        {{-- Professor filtrado por disciplina+turma --}}
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Professor <span class="text-danger">*</span></label>
-                            <select wire:model="professor_id" class="form-select @error('professor_id') is-invalid @enderror">
-                                <option value="">Selecione o professor...</option>
-                                @foreach($professores as $professor)
-                                <option value="{{ $professor->id }}">{{ $professor->nome }}</option>
-                                @endforeach
-                            </select>
-                            @error('professor_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            @if($turma_id && $disciplina_id)
+                                @if(count($professoresFiltrados) === 0)
+                                <div class="alert alert-warning py-2 mb-1" style="font-size:13px">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    Nenhum professor vinculado a esta disciplina e turma.
+                                    <a href="{{ route('professores') }}" class="alert-link" target="_blank">Vincular agora</a>
+                                </div>
+                                @endif
+                                <select wire:model="professor_id" class="form-select @error('professor_id') is-invalid @enderror"
+                                        {{ count($professoresFiltrados) === 0 ? 'disabled' : '' }}>
+                                    <option value="">Selecione o professor...</option>
+                                    @foreach($professoresFiltrados as $professor)
+                                    <option value="{{ $professor->id }}">
+                                        {{ $professor->nome }}
+                                        @if($professor->dias_disponiveis)
+                                            ({{ $professor->dias_disponiveis }})
+                                        @endif
+                                    </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <select class="form-select" disabled>
+                                    <option>Selecione turma e disciplina primeiro...</option>
+                                </select>
+                                <div class="form-text text-muted"><i class="bi bi-info-circle me-1"></i>Selecione a turma e disciplina para ver os professores disponíveis.</div>
+                            @endif
+                            @error('professor_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Sala</label>
                             <select wire:model="sala_id" class="form-select">
                                 <option value="">Online / Sem sala</option>
-                                @foreach($salas as $sala)
-                                <option value="{{ $sala->id }}">{{ $sala->nome }}</option>
-                                @endforeach
+                                @foreach($salas as $sala)<option value="{{ $sala->id }}">{{ $sala->nome }}</option>@endforeach
                             </select>
                         </div>
 
-                        {{-- Opção cadastrar todos os horários do dia --}}
                         <div class="col-12">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox"
-                                       wire:model.live="todosHorarios"
-                                       id="todosHorarios" role="switch">
+                                <input class="form-check-input" type="checkbox" wire:model.live="todosHorarios" id="todosHorarios" role="switch">
                                 <label class="form-check-label fw-medium" for="todosHorarios">
-                                    <i class="bi bi-calendar-week me-1" style="color:#E30613"></i>
-                                    Cadastrar em todos os horários do dia de uma vez
+                                    <i class="bi bi-calendar-week me-1" style="color:#E30613"></i>Cadastrar em todos os horários do dia de uma vez
                                 </label>
                             </div>
                             @if($todosHorarios)
                             <div class="mt-2 p-2 rounded" style="background:#fff3cd;font-size:13px">
-                                <i class="bi bi-info-circle me-1" style="color:#856404"></i>
-                                Serão criadas aulas em <strong>todos os horários</strong> cadastrados (exceto intervalos) para o dia selecionado.
+                                <i class="bi bi-info-circle me-1" style="color:#856404"></i>Serão criadas aulas em <strong>todos os horários</strong> cadastrados (exceto intervalos) para o dia selecionado.
                             </div>
                             @endif
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Horário <span class="text-danger">*</span></label>
-                            <select wire:model="horario_id"
-                                    class="form-select @error('horario_id') is-invalid @enderror"
-                                    {{ $todosHorarios ? 'disabled' : '' }}>
+                            <select wire:model="horario_id" class="form-select @error('horario_id') is-invalid @enderror" {{ $todosHorarios ? 'disabled' : '' }}>
                                 <option value="">{{ $todosHorarios ? 'Todos os horários' : 'Selecione...' }}</option>
                                 @if(!$todosHorarios)
-                                @foreach($horarios as $horario)
-                                <option value="{{ $horario->id }}">{{ substr($horario->hora_inicio,0,5) }} – {{ substr($horario->hora_fim,0,5) }} ({{ $horario->tipo }})</option>
-                                @endforeach
+                                @foreach($horarios as $horario)<option value="{{ $horario->id }}">{{ substr($horario->hora_inicio,0,5) }} – {{ substr($horario->hora_fim,0,5) }} ({{ $horario->tipo }})</option>@endforeach
                                 @endif
                             </select>
                             @error('horario_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -206,18 +186,14 @@
                             <label class="form-label fw-medium">Dia da Semana <span class="text-danger">*</span></label>
                             <select wire:model="dia_semana" class="form-select @error('dia_semana') is-invalid @enderror">
                                 <option value="">Selecione...</option>
-                                @foreach($dias as $num => $nome)
-                                <option value="{{ $num }}">{{ $nome }}</option>
-                                @endforeach
+                                @foreach($dias as $num => $nome)<option value="{{ $num }}">{{ $nome }}</option>@endforeach
                             </select>
                             @error('dia_semana') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Modalidade <span class="text-danger">*</span></label>
                             <select wire:model="modalidade" class="form-select @error('modalidade') is-invalid @enderror">
-                                @foreach($modalidades as $m)
-                                <option value="{{ $m }}">{{ ucfirst($m) }}</option>
-                                @endforeach
+                                @foreach($modalidades as $m)<option value="{{ $m }}">{{ ucfirst($m) }}</option>@endforeach
                             </select>
                             @error('modalidade') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
