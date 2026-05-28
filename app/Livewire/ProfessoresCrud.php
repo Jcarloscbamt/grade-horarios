@@ -366,11 +366,13 @@ class ProfessoresCrud extends Component
         // Sincroniza vínculos
         ProfessorDisciplina::where('professor_id', $prof->id)->delete();
         foreach ($this->vinculos as $v) {
+            // Garante que dias seja sempre array de inteiros antes de salvar
+            $dias = array_values(array_map('intval', (array) ($v['dias'] ?? [])));
             ProfessorDisciplina::create([
                 'professor_id'  => $prof->id,
                 'disciplina_id' => $v['disciplina_id'],
                 'turma_id'      => $v['turma_id'],
-                'dias'          => $v['dias'],
+                'dias'          => $dias,
             ]);
         }
 

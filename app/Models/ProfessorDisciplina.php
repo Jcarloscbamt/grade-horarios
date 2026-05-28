@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProfessorDisciplina extends Model
 {
@@ -13,33 +12,27 @@ class ProfessorDisciplina extends Model
         'professor_id',
         'disciplina_id',
         'turma_id',
-        'dias_semana',
+        'dias',
     ];
 
+    // CAST CRÍTICO: garante que 'dias' seja salvo como JSON
+    // e lido de volta como array PHP automaticamente
     protected $casts = [
-        'dias_semana' => 'array',
+        'dias' => 'array',
     ];
 
-    public function professor(): BelongsTo
+    public function professor()
     {
         return $this->belongsTo(Professor::class);
     }
 
-    public function disciplina(): BelongsTo
+    public function disciplina()
     {
         return $this->belongsTo(Disciplina::class);
     }
 
-    public function turma(): BelongsTo
+    public function turma()
     {
         return $this->belongsTo(Turma::class);
-    }
-
-    // Nomes dos dias da semana formatados para exibição
-    public function getDiasFormatadosAttribute(): string
-    {
-        $nomes = [1 => 'SEG', 2 => 'TER', 3 => 'QUA', 4 => 'QUI', 5 => 'SEX'];
-        $dias  = $this->dias_semana ?? [];
-        return implode(', ', array_map(fn($d) => $nomes[$d] ?? $d, $dias));
     }
 }
