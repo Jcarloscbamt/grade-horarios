@@ -165,7 +165,9 @@
                             <td class="fw-medium">{{ $item['disciplina'] }}</td>
                             <td>{{ $item['professor'] }}</td>
                             <td>
-                                @if($item['sala_id'])
+                                @if($item['modalidade'] === 'online')
+                                <span class="badge bg-primary" style="font-size:11px"><i class="bi bi-wifi me-1"></i>Online</span>
+                                @elseif($item['sala_id'])
                                 <i class="bi bi-building me-1 text-muted"></i>{{ $item['sala'] }}
                                 @else
                                 <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Sem sala</span>

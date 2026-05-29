@@ -239,7 +239,13 @@
                                 <div style="background:{{ $cor }};padding:10px 6px;text-align:center;border-radius:4px">
                                     @if($aulaDia)
                                         <div style="font-weight:bold;color:white;font-size:13px">{{ strtoupper($aulaDia->professor->nome) }}</div>
-                                        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-top:3px;font-weight:bold">{{ $aulaDia->sala?->nome ?? 'ONLINE' }}</div>
+                                        <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-top:3px;font-weight:bold">
+                                            @if($aulaDia->modalidade === 'online')
+                                                🌐 ONLINE
+                                            @else
+                                                {{ $aulaDia->sala?->nome ?? '—' }}
+                                            @endif
+                                        </div>
                                     @else
                                         <span style="color:rgba(255,255,255,0.3)">—</span>
                                     @endif
