@@ -64,14 +64,13 @@ class GeradorGrade extends Component
         $todasAulas = Aula::where('periodo_letivo_id', $periodoId)->get();
 
         // Mapa global de ocupação (persiste entre turmas desta geração)
-        $ocupProfessor = []; // [dia] = professor_id
+        // Armazena CONJUNTO de professores por dia para verificar conflito corretamente
+        $ocupProfessor = []; // [dia][professor_id] = true
         $ocupSala      = []; // [dia][horarioId] = sala_id
 
         foreach ($todasAulas as $aula) {
             $dia = $aula->dia_semana;
-            if (!isset($ocupProfessor[$dia])) {
-                $ocupProfessor[$dia] = $aula->professor_id;
-            }
+            $ocupProfessor[$dia][$aula->professor_id] = true; // marca professor no dia
             if ($aula->sala_id) {
                 $ocupSala[$dia][$aula->horario_id] = $aula->sala_id;
             }
@@ -145,8 +144,9 @@ class GeradorGrade extends Component
 
                     if (isset($ocupTurma[$dia])) continue; // turma ocupada
 
-                    if (isset($ocupProfessor[$dia]) && $ocupProfessor[$dia] != $professor->id) {
-                        continue; // professor em outra turma neste dia
+                    // Verifica se este professor já está alocado neste dia (qualquer turma)
+                    if (isset($ocupProfessor[$dia][$professor->id])) {
+                        continue; // professor já leciona neste dia para outra turma
                     }
 
                     // Busca sala
@@ -194,8 +194,8 @@ class GeradorGrade extends Component
                             'sala'          => $sala?->nome ?? 'Sem sala',
                             'modalidade'    => 'presencial',
                         ];
-                        $ocupTurma[$dia]      = true;
-                        $ocupProfessor[$dia]  = $professor->id;
+                        $ocupTurma[$dia]                       = true;
+                        $ocupProfessor[$dia][$professor->id]  = true; // marca professor no dia
                         if ($salaId) $ocupSala[$dia][$h->id] = $salaId;
                     }
 
