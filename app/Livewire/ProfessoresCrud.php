@@ -349,16 +349,16 @@ class ProfessoresCrud extends Component
             ]
         );
 
-        // Sincroniza vínculos
+        // Sincroniza vínculos — dias sempre = disponibilidade geral atual
+        // Garante que mudanças na disponibilidade reflitam em todos os vínculos
         ProfessorDisciplina::where('professor_id', $prof->id)->delete();
+        $diasAtuais = array_values(array_map('intval', $this->disponibilidade));
         foreach ($this->vinculos as $v) {
-            // Garante que dias seja sempre array de inteiros antes de salvar
-            $dias = array_values(array_map('intval', (array) ($v['dias'] ?? [])));
             ProfessorDisciplina::create([
                 'professor_id'  => $prof->id,
                 'disciplina_id' => $v['disciplina_id'],
                 'turma_id'      => $v['turma_id'],
-                'dias'          => $dias,
+                'dias'          => $diasAtuais, // sempre usa disponibilidade atual
             ]);
         }
 
