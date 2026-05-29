@@ -27,7 +27,6 @@ class ProfessoresCrud extends Component
     public int    $sel_curso_id       = 0;
     public string $sel_curso_nome     = '';
     public string $sel_turma_id       = '';
-    public array  $sel_dias           = [];
     public int    $editandoVinculoIdx = -1;
 
     // ── Modal / UI ────────────────────────────────────
@@ -185,7 +184,6 @@ class ProfessoresCrud extends Component
         $this->sel_curso_id        = $cursoId;
         $this->sel_curso_nome      = $cursoNome;
         $this->sel_turma_id        = '';
-        $this->sel_dias            = [];
         $this->buscaDisciplina     = '';
     }
 
@@ -196,7 +194,6 @@ class ProfessoresCrud extends Component
         $this->sel_curso_id        = 0;
         $this->sel_curso_nome      = '';
         $this->sel_turma_id        = '';
-        $this->sel_dias            = [];
         $this->buscaDisciplina     = '';
         $this->editandoVinculoIdx  = -1;
     }
@@ -208,23 +205,13 @@ class ProfessoresCrud extends Component
             $this->addError('vinculo', 'Selecione disciplina e turma.');
             return;
         }
-        if (empty($this->sel_dias)) {
-            $this->addError('vinculo', 'Selecione ao menos um dia para este vínculo.');
+        if (empty($this->disponibilidade)) {
+            $this->addError('vinculo', 'Defina a disponibilidade geral do professor antes de adicionar disciplinas.');
             return;
         }
 
-        // Valida se os dias estão na disponibilidade geral
-        $diasFora = array_diff(
-            array_map('intval', $this->sel_dias),
-            array_map('intval', $this->disponibilidade)
-        );
-        if (!empty($diasFora)) {
-            $nomes = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex'];
-            $labels = implode(', ', array_map(fn($d) => $nomes[$d] ?? $d, $diasFora));
-            $this->addError('vinculo', "Os dias {$labels} não constam na disponibilidade geral do professor.");
-            return;
-        }
-
+        // Usa todos os dias da disponibilidade geral
+        // O Gerador de Grade gerencia os conflitos entre turmas automaticamente
         $turma = Turma::find($this->sel_turma_id);
         $novoVinculo = [
             'disciplina_id'   => $this->sel_disciplina_id,
@@ -233,7 +220,7 @@ class ProfessoresCrud extends Component
             'curso_nome'      => $this->sel_curso_nome,
             'turma_id'        => (int) $this->sel_turma_id,
             'turma_nome'      => $turma->nome ?? '',
-            'dias'            => array_map('intval', $this->sel_dias),
+            'dias'            => array_values(array_map('intval', $this->disponibilidade)),
         ];
 
         if ($this->editandoVinculoIdx >= 0) {
@@ -255,7 +242,6 @@ class ProfessoresCrud extends Component
         $this->sel_curso_id        = $v['curso_id'];
         $this->sel_curso_nome      = $v['curso_nome'];
         $this->sel_turma_id        = (string) $v['turma_id'];
-        $this->sel_dias            = $v['dias'];
         $this->editandoVinculoIdx  = $idx;
         $this->buscaDisciplina     = '';
     }
@@ -438,7 +424,6 @@ class ProfessoresCrud extends Component
         $this->sel_curso_id        = 0;
         $this->sel_curso_nome      = '';
         $this->sel_turma_id        = '';
-        $this->sel_dias            = [];
         $this->editandoVinculoIdx  = -1;
         $this->resetValidation();
     }

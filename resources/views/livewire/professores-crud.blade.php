@@ -265,36 +265,19 @@
                                         </select>
                                     </div>
 
-                                    {{-- Passo 3: Dias --}}
-                                    @if($sel_turma_id)
-                                    <div class="mb-2">
-                                        <label class="form-label fw-medium small mb-1"><span class="badge bg-primary me-1">3</span>Dias para esta disciplina <span class="text-danger">*</span></label>
-                                        @if(empty($disponibilidade))
-                                        <div class="alert alert-warning py-2" style="font-size:12px"><i class="bi bi-exclamation-triangle me-1"></i>Defina a disponibilidade geral primeiro (coluna esquerda).</div>
-                                        @else
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            @foreach($diasNomes as $num => $label)
-                                            @php $disponivel = in_array($num, $disponibilidade); $marcado = in_array($num, $sel_dias); @endphp
-                                            <div class="form-check form-check-inline m-0">
-                                                <input class="form-check-input" type="checkbox" wire:model.live="sel_dias" value="{{ $num }}" id="sdia_{{ $num }}" {{ !$disponivel ? 'disabled' : '' }}>
-                                                <label class="form-check-label fw-semibold" for="sdia_{{ $num }}">
-                                                    <span class="badge {{ !$disponivel ? 'bg-light text-muted border' : ($marcado ? 'bg-primary' : 'bg-light text-dark border') }}"
-                                                          style="font-size:12px;min-width:38px;cursor:{{ $disponivel ? 'pointer' : 'not-allowed' }};opacity:{{ $disponivel ? '1' : '0.4' }}">{{ $label }}</span>
-                                                </label>
-                                            </div>
-                                            @endforeach
-                                        </div>
-                                        <div class="text-muted mt-1" style="font-size:11px"><i class="bi bi-info-circle me-1"></i>Apenas dias da disponibilidade geral estão habilitados.</div>
-                                        @endif
+                                    {{-- Valida disponibilidade antes de permitir adicionar --}}
+                                    @if($sel_turma_id && empty($disponibilidade))
+                                    <div class="alert alert-warning py-2 mb-2" style="font-size:12px">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Defina a <strong>disponibilidade geral</strong> do professor antes de adicionar disciplinas.
                                     </div>
                                     @endif
                                     @endif
 
                                     {{-- Botão Adicionar / Salvar Edição --}}
-                                    @if($sel_disciplina_id && $sel_turma_id && !empty($disponibilidade))
+                                    @if($sel_disciplina_id && $sel_turma_id)
                                     <button type="button" wire:click="adicionarVinculo"
-                                        class="btn btn-sm w-100 mt-1 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}"
-                                        {{ empty($sel_dias) ? 'disabled' : '' }}>
+                                        class="btn btn-sm w-100 mt-1 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}">
                                         <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>
                                         {{ $editandoVinculoIdx >= 0 ? 'Salvar Alteração' : 'Adicionar Vínculo' }}
                                     </button>
@@ -321,11 +304,7 @@
                                                         <i class="bi bi-mortarboard me-1"></i>{{ $v['curso_nome'] }} &nbsp;·&nbsp;
                                                         <i class="bi bi-people me-1"></i>{{ $v['turma_nome'] }}
                                                     </div>
-                                                    <div class="mt-1 d-flex gap-1 flex-wrap">
-                                                        @foreach($v['dias'] as $dia)
-                                                        <span class="badge bg-primary" style="font-size:10px">{{ $diasNomes[$dia] ?? $dia }}</span>
-                                                        @endforeach
-                                                    </div>
+
                                                 </div>
                                                 <div class="d-flex gap-1 ms-2">
                                                     <button type="button" wire:click="editarVinculo({{ $i }})" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></button>
