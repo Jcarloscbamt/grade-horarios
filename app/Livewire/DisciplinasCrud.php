@@ -93,10 +93,13 @@ class DisciplinasCrud extends Component
         Disciplina::updateOrCreate(
             ['id' => $this->disciplinaId],
             [
-                'curso_id'       => $this->curso_id,
-                'nome'           => trim($this->nome),
-                'carga_horaria'  => $this->carga_horaria,
-                'semestre_grade' => $this->semestre_grade,
+                'curso_id'           => $this->curso_id,
+                'nome'               => trim($this->nome),
+                'carga_horaria'      => $this->carga_horaria,
+                'semestre_grade'     => $this->semestre_grade,
+                'tipo_sala'          => $this->tipo_sala ?: null,
+                'bloco_preferencial' => $this->bloco_preferencial ?: null,
+                'ativo'              => $this->ativo,
             ]
         );
 
