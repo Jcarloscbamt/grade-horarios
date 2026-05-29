@@ -149,13 +149,19 @@ class GeradorGrade extends Component
                         continue; // professor já leciona neste dia para outra turma
                     }
 
-                    // Busca sala
-                    $sala           = null;
-                    $ocupadosNoDia  = array_values(array_filter(
-                        array_map(fn($h) => $ocupSala[$dia][$h->id] ?? null, $horarios->all())
-                    ));
+                    // Busca sala (Online não precisa de sala física)
+                    $sala       = null;
+                    $salaId     = null;
+                    $modalidade = 'presencial';
 
-                    if ($disciplina->tipo_sala) {
+                    if ($disciplina->tipo_sala === 'Online') {
+                        // Aula online — sem sala física, modalidade = online
+                        $modalidade = 'online';
+                    } elseif ($disciplina->tipo_sala) {
+                        $ocupadosNoDia = array_values(array_filter(
+                            array_map(fn($h) => $ocupSala[$dia][$h->id] ?? null, $horarios->all())
+                        ));
+
                         if ($disciplina->bloco_preferencial) {
                             $sala = Sala::where('ativo', true)
                                 ->where('tipo', $disciplina->tipo_sala)
@@ -167,15 +173,13 @@ class GeradorGrade extends Component
                                 ->where('tipo', $disciplina->tipo_sala)
                                 ->whereNotIn('id', $ocupadosNoDia)->first();
                         }
+                        if (!$sala) {
+                            $this->avisosSemSala[] = [
+                                'mensagem' => "{$turma->nome} — {$disciplina->nome}: sem sala '{$disciplina->tipo_sala}' disponível.",
+                            ];
+                        }
+                        $salaId = $sala?->id;
                     }
-
-                    if (!$sala && $disciplina->tipo_sala) {
-                        $this->avisosSemSala[] = [
-                            'mensagem' => "{$turma->nome} — {$disciplina->nome}: sem sala '{$disciplina->tipo_sala}' disponível.",
-                        ];
-                    }
-
-                    $salaId = $sala?->id;
 
                     foreach ($horarios as $h) {
                         $this->preview[] = [
@@ -192,7 +196,7 @@ class GeradorGrade extends Component
                             'dia_nome'      => $this->nomeDia($dia),
                             'sala_id'       => $salaId,
                             'sala'          => $sala?->nome ?? 'Sem sala',
-                            'modalidade'    => 'presencial',
+                            'modalidade'    => $modalidade,
                         ];
                         $ocupTurma[$dia]                       = true;
                         $ocupProfessor[$dia][$professor->id]  = true; // marca professor no dia

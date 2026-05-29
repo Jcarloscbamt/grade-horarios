@@ -35,6 +35,7 @@ class DisciplinasCrud extends Component
             'nome'           => 'required|min:3|max:100',
             'carga_horaria'  => 'required|integer|min:1',
             'semestre_grade' => 'required|integer|min:1|max:10',
+            'tipo_sala'      => 'required|in:Sala de Aula,Laboratório,Online',
         ];
     }
 
@@ -46,6 +47,8 @@ class DisciplinasCrud extends Component
         'carga_horaria.integer'   => 'A carga horária deve ser um número.',
         'carga_horaria.min'       => 'A carga horária deve ser maior que zero.',
         'semestre_grade.required' => 'O semestre é obrigatório.',
+        'tipo_sala.required'      => 'Selecione o tipo de sala.',
+        'tipo_sala.in'            => 'Tipo de sala inválido.',
         'semestre_grade.integer'  => 'O semestre deve ser um número.',
         'semestre_grade.min'      => 'O semestre deve ser no mínimo 1.',
         'semestre_grade.max'      => 'O semestre deve ser no máximo 10.',
@@ -98,7 +101,7 @@ class DisciplinasCrud extends Component
                 'carga_horaria'      => $this->carga_horaria,
                 'semestre_grade'     => $this->semestre_grade,
                 'tipo_sala'          => $this->tipo_sala ?: null,
-                'bloco_preferencial' => $this->bloco_preferencial ?: null,
+                'bloco_preferencial' => ($this->tipo_sala === 'Online') ? null : ($this->bloco_preferencial ?: null),
                 'ativo'              => $this->ativo,
             ]
         );
@@ -193,8 +196,8 @@ class DisciplinasCrud extends Component
 
         $cursos = Curso::orderBy('nome')->get();
 
-        // Tipos de sala (iguais ao cadastro de salas)
-        $tiposSala = ['Sala de Aula', 'Laboratório', 'Auditório', 'Sala de Reunião'];
+        // Tipos de sala disponíveis
+        $tiposSala = ['Sala de Aula', 'Laboratório', 'Online'];
 
         // Blocos disponíveis (busca os existentes no banco)
         $blocos = \App\Models\Sala::whereNotNull('bloco')

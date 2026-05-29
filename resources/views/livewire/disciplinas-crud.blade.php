@@ -143,32 +143,61 @@
                             @error('carga_horaria') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-12"><hr class="my-1">
-                            <label class="form-label fw-medium"><i class="bi bi-building me-1 text-muted"></i>Sala Preferencial para Alocação Automática</label>
-                            <div class="text-muted small mb-2">O gerador de grade usará este tipo + bloco para alocar a sala automaticamente.</div>
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-building me-1 text-muted"></i>Tipo de Sala
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="text-muted small mb-2">O gerador de grade usará este tipo para alocar a sala automaticamente.</div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-medium">Tipo de Sala</label>
+
+                        {{-- Tipo de Sala — obrigatório --}}
+                        <div class="{{ $tipo_sala === 'Online' ? 'col-12' : 'col-md-6' }}">
                             <select wire:model.live="tipo_sala" class="form-select @error('tipo_sala') is-invalid @enderror">
-                                <option value="">Sem preferência</option>
-                                @foreach($tiposSala as $tipo)<option value="{{ $tipo }}">{{ $tipo }}</option>@endforeach
+                                <option value="">Selecione o tipo de sala...</option>
+                                @foreach($tiposSala as $tipo)
+                                <option value="{{ $tipo }}">
+                                    @if($tipo === 'Online')
+                                        🌐 Online — Aula remota (sem sala física)
+                                    @elseif($tipo === 'Laboratório')
+                                        🔬 Laboratório
+                                    @else
+                                        🏫 {{ $tipo }}
+                                    @endif
+                                </option>
+                                @endforeach
                             </select>
+                            @error('tipo_sala')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+
+                        {{-- Bloco Preferencial — só aparece se NÃO for Online --}}
+                        @if($tipo_sala && $tipo_sala !== 'Online')
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Bloco Preferencial</label>
-                            <select wire:model="bloco_preferencial" class="form-select" {{ !$tipo_sala ? 'disabled' : '' }}>
+                            <select wire:model="bloco_preferencial" class="form-select">
                                 <option value="">Qualquer bloco</option>
                                 @foreach($blocos as $bloco)<option value="{{ $bloco }}">Bloco {{ $bloco }}</option>@endforeach
                             </select>
-                            @if(!$tipo_sala)<div class="form-text text-muted">Selecione um tipo de sala primeiro.</div>@endif
                         </div>
+                        @endif
+
+                        {{-- Preview da alocação --}}
                         @if($tipo_sala)
                         <div class="col-12">
+                            @if($tipo_sala === 'Online')
+                            <div class="p-2 rounded border bg-light d-inline-flex align-items-center gap-2" style="border-color:#0d6efd !important">
+                                <i class="bi bi-wifi text-primary"></i>
+                                <span class="fw-semibold text-primary" style="font-size:13px">
+                                    Aula Online — sem sala física. Alunos assistem de casa.
+                                </span>
+                            </div>
+                            @else
                             <div class="p-2 rounded border bg-light d-inline-flex align-items-center gap-2">
                                 <i class="bi bi-building text-primary"></i>
                                 <span class="fw-semibold" style="font-size:13px">
                                     Sala alocada como: <span class="text-primary">{{ $tipo_sala }}{{ $bloco_preferencial ? ' — Bloco ' . $bloco_preferencial : ' (qualquer bloco)' }}</span>
                                 </span>
                             </div>
+                            @endif
                         </div>
                         @endif
                         <div class="col-12">
