@@ -8,23 +8,33 @@ use Livewire\Component;
 
 class GeradorGrade extends Component
 {
-    public string $turma_id              = '';
-    public array  $periodos_selecionados = [];
-    public bool   $previewGerado         = false;
-    public bool   $salvando              = false;
-    public array  $preview               = [];
-    public array  $conflitos             = [];
-    public array  $avisosSemSala         = [];
+    public string $periodo_letivo_id    = '';
+    public array  $turmasSelecionadas   = [];
+    public bool   $previewGerado        = false;
+    public bool   $salvando             = false;
+    public array  $preview              = [];
+    public array  $conflitos            = [];
+    public array  $avisosSemSala        = [];
 
     public function mount(): void
     {
         $ativo = PeriodoLetivo::where('ativo', true)->first();
         if ($ativo) {
-            $this->periodos_selecionados = [$ativo->id];
+            $this->periodo_letivo_id = $ativo->id;
         }
     }
 
-    public function updatedTurmaId(): void { $this->resetPreview(); }
+    public function updatedPeriodoLetivoId(): void { $this->resetPreview(); }
+
+    public function toggleTodasTurmas(): void
+    {
+        $todos = Turma::where('ativo', true)->pluck('id')->toArray();
+        if (count($this->turmasSelecionadas) >= count($todos)) {
+            $this->turmasSelecionadas = [];
+        } else {
+            $this->turmasSelecionadas = $todos;
+        }
+    }
 
     public function resetPreview(): void
     {
@@ -36,8 +46,8 @@ class GeradorGrade extends Component
 
     public function gerarPrevia(): void
     {
-        if (!$this->turma_id || empty($this->periodos_selecionados)) {
-            session()->flash('error', 'Selecione uma turma e ao menos um período letivo.');
+        if (!$this->periodo_letivo_id || empty($this->turmasSelecionadas)) {
+            session()->flash('error', 'Selecione um período letivo e ao menos uma turma.');
             return;
         }
 
@@ -45,151 +55,123 @@ class GeradorGrade extends Component
         $this->conflitos     = [];
         $this->avisosSemSala = [];
 
-        $turma    = Turma::with('curso')->findOrFail($this->turma_id);
         $horarios = Horario::where('tipo', '!=', 'intervalo')
             ->orderBy('hora_inicio')->get();
 
-        $vinculos = ProfessorDisciplina::where('turma_id', $this->turma_id)
-            ->with(['professor', 'disciplina'])
-            ->get();
+        $periodoId = $this->periodo_letivo_id;
 
-        if ($vinculos->isEmpty()) {
-            session()->flash('error', 'Nenhum vínculo professor-disciplina cadastrado para esta turma.');
-            return;
-        }
+        // Todas as aulas do período (conflito de professor entre turmas)
+        $todasAulas = Aula::where('periodo_letivo_id', $periodoId)->get();
 
-        // Aulas da turma (para evitar duplicidade)
-        $aulasExistentes = Aula::whereIn('periodo_letivo_id', $this->periodos_selecionados)
-            ->where('turma_id', $this->turma_id)
-            ->get();
-
-        // Todas as aulas do período (para conflito de professor entre turmas)
-        $todasAulas = Aula::whereIn('periodo_letivo_id', $this->periodos_selecionados)->get();
-
-        $ocupTurma    = []; // [periodoId][dia] = true
-        $ocupProfessor = []; // [periodoId][dia] = professor_id (TODAS turmas)
-        $ocupSala      = []; // [periodoId][dia][horarioId] = sala_id
-
-        foreach ($aulasExistentes as $aula) {
-            $ocupTurma[$aula->periodo_letivo_id][$aula->dia_semana] = true;
-            if ($aula->sala_id) {
-                $ocupSala[$aula->periodo_letivo_id][$aula->dia_semana][$aula->horario_id] = $aula->sala_id;
-            }
-        }
+        // Mapa global de ocupação (persiste entre turmas desta geração)
+        $ocupProfessor = []; // [dia] = professor_id
+        $ocupSala      = []; // [dia][horarioId] = sala_id
 
         foreach ($todasAulas as $aula) {
-            $pid = $aula->periodo_letivo_id;
             $dia = $aula->dia_semana;
-            if (!isset($ocupProfessor[$pid][$dia])) {
-                $ocupProfessor[$pid][$dia] = $aula->professor_id;
+            if (!isset($ocupProfessor[$dia])) {
+                $ocupProfessor[$dia] = $aula->professor_id;
             }
             if ($aula->sala_id) {
-                $ocupSala[$pid][$dia][$aula->horario_id] = $aula->sala_id;
+                $ocupSala[$dia][$aula->horario_id] = $aula->sala_id;
             }
         }
 
-        foreach ($this->periodos_selecionados as $periodoId) {
-            // Rastreia disciplinas já alocadas NESTA geração (não só no banco)
-            // Regra: mesma disciplina não pode aparecer duas vezes na semana para a mesma turma
-            $disciplinasAlocadas = []; // [disciplinaId] = dia alocado
+        // Processa cada turma selecionada
+        foreach ($this->turmasSelecionadas as $turmaId) {
+            $turma = Turma::with('curso')->find($turmaId);
+            if (!$turma) continue;
+
+            $vinculos = ProfessorDisciplina::where('turma_id', $turmaId)
+                ->with(['professor', 'disciplina'])
+                ->get();
+
+            if ($vinculos->isEmpty()) {
+                $this->conflitos[] = [
+                    'tipo'     => 'sem_vinculo',
+                    'mensagem' => "Turma {$turma->nome}: nenhum vínculo professor-disciplina cadastrado.",
+                ];
+                continue;
+            }
+
+            // Aulas já existentes desta turma (para evitar duplicidade)
+            $aulasExistentes = Aula::where('periodo_letivo_id', $periodoId)
+                ->where('turma_id', $turmaId)
+                ->get();
+
+            $ocupTurma           = []; // [dia] = true
+            $disciplinasAlocadas = []; // [disciplinaId] = dia
+
+            foreach ($aulasExistentes as $aula) {
+                $ocupTurma[$aula->dia_semana] = true;
+                if ($aula->sala_id) {
+                    $ocupSala[$aula->dia_semana][$aula->horario_id] = $aula->sala_id;
+                }
+            }
 
             foreach ($vinculos as $vinculo) {
                 $professor  = $vinculo->professor;
                 $disciplina = $vinculo->disciplina;
-
                 if (!$professor || !$disciplina) continue;
 
-                // Obtém dias — garante array
-                $rawDias = $vinculo->dias;
-                if (is_string($rawDias)) {
-                    $diasDisp = json_decode($rawDias, true) ?? [];
-                } elseif (is_array($rawDias)) {
-                    $diasDisp = $rawDias;
-                } else {
-                    $diasDisp = [];
-                }
+                // Disciplina já alocada no DB ou nesta geração?
+                $jaExisteDb      = $aulasExistentes->where('disciplina_id', $disciplina->id)->isNotEmpty();
+                $jaAlocadaPreview = isset($disciplinasAlocadas[$disciplina->id]);
+                if ($jaExisteDb || $jaAlocadaPreview) continue;
 
-                // Fallback: usa disponibilidade geral do professor
+                // Obtém dias disponíveis
+                $rawDias  = $vinculo->dias;
+                $diasDisp = is_array($rawDias) ? $rawDias
+                    : (is_string($rawDias) ? (json_decode($rawDias, true) ?? []) : []);
+
                 if (empty($diasDisp)) {
-                    $dispGeral = $professor->disponibilidade;
-                    if (is_string($dispGeral)) {
-                        $diasDisp = json_decode($dispGeral, true) ?? [];
-                    } elseif (is_array($dispGeral)) {
-                        $diasDisp = $dispGeral;
-                    }
+                    $disp = $professor->disponibilidade;
+                    $diasDisp = is_array($disp) ? $disp
+                        : (is_string($disp) ? (json_decode($disp, true) ?? []) : []);
                 }
 
                 if (empty($diasDisp)) {
                     $this->conflitos[] = [
                         'tipo'       => 'sem_dias',
-                        'mensagem'   => "Professor {$professor->nome} não tem disponibilidade configurada.",
-                        'professor'  => $professor->nome,
-                        'disciplina' => $disciplina->nome,
+                        'mensagem'   => "{$turma->nome} — Professor {$professor->nome} sem disponibilidade para {$disciplina->nome}.",
                     ];
                     continue;
                 }
-
-                // Já existe aula para esta disciplina neste período? (banco ou preview)
-                $jaExisteDb = $aulasExistentes
-                    ->where('disciplina_id', $disciplina->id)
-                    ->where('periodo_letivo_id', $periodoId)
-                    ->isNotEmpty();
-
-                $jaAlocadaNoPreview = isset($disciplinasAlocadas[$disciplina->id]);
-
-                if ($jaExisteDb || $jaAlocadaNoPreview) continue;
 
                 $alocado = false;
 
                 foreach ($diasDisp as $dia) {
                     $dia = (int) $dia;
 
-                    // Turma já ocupada neste dia?
-                    if (isset($ocupTurma[$periodoId][$dia])) continue;
+                    if (isset($ocupTurma[$dia])) continue; // turma ocupada
 
-                    // Professor já tem aula em outra turma neste dia?
-                    if (isset($ocupProfessor[$periodoId][$dia]) &&
-                        $ocupProfessor[$periodoId][$dia] != $professor->id) {
-                        $this->conflitos[] = [
-                            'tipo'       => 'professor_ocupado',
-                            'mensagem'   => "Professor {$professor->nome} já tem aula no dia {$this->nomeDia($dia)} (outra turma).",
-                            'professor'  => $professor->nome,
-                            'disciplina' => $disciplina->nome,
-                            'dia'        => $this->nomeDia($dia),
-                        ];
-                        continue;
+                    if (isset($ocupProfessor[$dia]) && $ocupProfessor[$dia] != $professor->id) {
+                        continue; // professor em outra turma neste dia
                     }
 
                     // Busca sala
-                    $sala   = null;
-                    $salaId = null;
+                    $sala           = null;
+                    $ocupadosNoDia  = array_values(array_filter(
+                        array_map(fn($h) => $ocupSala[$dia][$h->id] ?? null, $horarios->all())
+                    ));
 
                     if ($disciplina->tipo_sala) {
-                        $ocupadosNoDia = array_values(array_filter(
-                            array_map(fn($h) => $ocupSala[$periodoId][$dia][$h->id] ?? null, $horarios->all())
-                        ));
-
                         if ($disciplina->bloco_preferencial) {
                             $sala = Sala::where('ativo', true)
                                 ->where('tipo', $disciplina->tipo_sala)
                                 ->where('bloco', $disciplina->bloco_preferencial)
-                                ->whereNotIn('id', $ocupadosNoDia)
-                                ->first();
+                                ->whereNotIn('id', $ocupadosNoDia)->first();
                         }
-
                         if (!$sala) {
                             $sala = Sala::where('ativo', true)
                                 ->where('tipo', $disciplina->tipo_sala)
-                                ->whereNotIn('id', $ocupadosNoDia)
-                                ->first();
+                                ->whereNotIn('id', $ocupadosNoDia)->first();
                         }
                     }
 
                     if (!$sala && $disciplina->tipo_sala) {
                         $this->avisosSemSala[] = [
-                            'disciplina' => $disciplina->nome,
-                            'dia'        => $this->nomeDia($dia),
-                            'mensagem'   => "Sem sala do tipo '{$disciplina->tipo_sala}' disponível — aula criada sem sala.",
+                            'mensagem' => "{$turma->nome} — {$disciplina->nome}: sem sala '{$disciplina->tipo_sala}' disponível.",
                         ];
                     }
 
@@ -198,29 +180,25 @@ class GeradorGrade extends Component
                     foreach ($horarios as $h) {
                         $this->preview[] = [
                             'periodo_id'    => $periodoId,
-                            'turma_id'      => (int) $this->turma_id,
+                            'turma_id'      => $turmaId,
                             'turma_nome'    => $turma->nome,
                             'disciplina_id' => $disciplina->id,
                             'disciplina'    => $disciplina->nome,
                             'professor_id'  => $professor->id,
                             'professor'     => $professor->nome,
                             'horario_id'    => $h->id,
-                            'horario'       => substr($h->hora_inicio,0,5) . ' - ' . substr($h->hora_fim,0,5),
+                            'horario'       => substr($h->hora_inicio,0,5).' - '.substr($h->hora_fim,0,5),
                             'dia_semana'    => $dia,
                             'dia_nome'      => $this->nomeDia($dia),
                             'sala_id'       => $salaId,
                             'sala'          => $sala?->nome ?? 'Sem sala',
                             'modalidade'    => 'presencial',
                         ];
-
-                        $ocupTurma[$periodoId][$dia]      = true;
-                        $ocupProfessor[$periodoId][$dia]  = $professor->id;
-                        if ($salaId) {
-                            $ocupSala[$periodoId][$dia][$h->id] = $salaId;
-                        }
+                        $ocupTurma[$dia]      = true;
+                        $ocupProfessor[$dia]  = $professor->id;
+                        if ($salaId) $ocupSala[$dia][$h->id] = $salaId;
                     }
 
-                    // Marca disciplina como alocada para evitar duplicata na semana
                     $disciplinasAlocadas[$disciplina->id] = $dia;
                     $alocado = true;
                     break;
@@ -228,20 +206,17 @@ class GeradorGrade extends Component
 
                 if (!$alocado) {
                     $this->conflitos[] = [
-                        'tipo'       => 'sem_dia_disponivel',
-                        'mensagem'   => "Não foi possível alocar {$disciplina->nome} ({$professor->nome}): todos os dias têm conflito.",
-                        'professor'  => $professor->nome,
-                        'disciplina' => $disciplina->nome,
+                        'tipo'     => 'sem_dia',
+                        'mensagem' => "{$turma->nome} — Não foi possível alocar {$disciplina->nome} ({$professor->nome}): todos os dias têm conflito.",
                     ];
                 }
             }
         }
 
-        // Ordena por dia da semana (1=SEG → 5=SEX) e depois por horário
+        // Ordena por turma, depois dia, depois horário
         usort($this->preview, function ($a, $b) {
-            if ($a['dia_semana'] !== $b['dia_semana']) {
-                return $a['dia_semana'] <=> $b['dia_semana'];
-            }
+            if ($a['turma_nome'] !== $b['turma_nome']) return strcmp($a['turma_nome'], $b['turma_nome']);
+            if ($a['dia_semana']  !== $b['dia_semana'])  return $a['dia_semana'] <=> $b['dia_semana'];
             return $a['horario_id'] <=> $b['horario_id'];
         });
 
@@ -257,7 +232,7 @@ class GeradorGrade extends Component
         }
 
         $this->salvando = true;
-        $count          = 0;
+        $count = 0;
 
         foreach ($this->preview as $item) {
             Aula::updateOrCreate(
@@ -277,7 +252,7 @@ class GeradorGrade extends Component
             $count++;
         }
 
-        Log::registrar('criou', 'Gerador de Grade', "Grade gerada: {$count} aula(s) para turma {$this->preview[0]['turma_nome']}");
+        Log::registrar('criou', 'Gerador de Grade', "Grade gerada: {$count} aula(s) para ".count($this->turmasSelecionadas)." turma(s)");
 
         $this->salvando      = false;
         $this->previewGerado = false;
@@ -290,8 +265,8 @@ class GeradorGrade extends Component
 
     public function limpar(): void
     {
-        $this->turma_id             = '';
-        $this->periodos_selecionados = [];
+        $this->periodo_letivo_id  = '';
+        $this->turmasSelecionadas = [];
         $this->resetPreview();
     }
 
