@@ -89,6 +89,10 @@ class GeradorGrade extends Component
         }
 
         foreach ($this->periodos_selecionados as $periodoId) {
+            // Rastreia disciplinas já alocadas NESTA geração (não só no banco)
+            // Regra: mesma disciplina não pode aparecer duas vezes na semana para a mesma turma
+            $disciplinasAlocadas = []; // [disciplinaId] = dia alocado
+
             foreach ($vinculos as $vinculo) {
                 $professor  = $vinculo->professor;
                 $disciplina = $vinculo->disciplina;
@@ -125,13 +129,15 @@ class GeradorGrade extends Component
                     continue;
                 }
 
-                // Já existe aula para esta disciplina neste período?
-                $jaExiste = $aulasExistentes
+                // Já existe aula para esta disciplina neste período? (banco ou preview)
+                $jaExisteDb = $aulasExistentes
                     ->where('disciplina_id', $disciplina->id)
                     ->where('periodo_letivo_id', $periodoId)
                     ->isNotEmpty();
 
-                if ($jaExiste) continue;
+                $jaAlocadaNoPreview = isset($disciplinasAlocadas[$disciplina->id]);
+
+                if ($jaExisteDb || $jaAlocadaNoPreview) continue;
 
                 $alocado = false;
 
@@ -214,6 +220,8 @@ class GeradorGrade extends Component
                         }
                     }
 
+                    // Marca disciplina como alocada para evitar duplicata na semana
+                    $disciplinasAlocadas[$disciplina->id] = $dia;
                     $alocado = true;
                     break;
                 }
