@@ -19,6 +19,7 @@ class CursosCrud extends Component
     public string $email_coord   = '';
     public string $telefone_coord = '';
     public string $cor_grade     = '#E30613';
+    public int    $total_semestres = 6;
 
     public bool $showModal  = false;
     public bool $showDelete = false;
@@ -52,6 +53,7 @@ class CursosCrud extends Component
             'coordenador'    => 'required|min:3|max:100',
             'email_coord'    => 'required|email|max:100',
             'telefone_coord' => 'nullable|min:13|max:15',
+            'total_semestres' => 'required|integer|min:1|max:10',
             'cor_grade'      => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
@@ -122,7 +124,8 @@ class CursosCrud extends Component
                 'coordenador'    => $this->coordenador,
                 'email_coord'    => $this->email_coord,
                 'telefone_coord' => $this->telefone_coord ?: null,
-                'cor_grade'      => $this->cor_grade,
+                'total_semestres' => 'required|integer|min:1|max:10',
+            'cor_grade'      => $this->cor_grade,
             ]
         );
 

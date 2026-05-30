@@ -6,7 +6,14 @@
             <small class="text-muted">Calendário acadêmico e datas de avaliação</small>
         </div>
         @hasanyrole('admin|coordenador')
-        <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Novo Período</button>
+        <div class="d-flex gap-2">
+            <button wire:click="prepararAvanco" class="btn btn-warning">
+                <i class="bi bi-arrow-up-circle me-1"></i>Avançar Semestre das Turmas
+            </button>
+            <button wire:click="create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Novo Período
+            </button>
+        </div>
         @endhasanyrole
     </div>
 
@@ -68,6 +75,87 @@
             </table>
         </div>
     </div>
+
+
+    {{-- Modal Avançar Semestre --}}
+    @if($showAvancar)
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.55)">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header" style="background:#f59e0b;color:white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-arrow-up-circle me-2"></i>Avançar Semestre das Turmas
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" wire:click="cancelarAvanco"></button>
+                </div>
+                <div class="modal-body">
+
+                    @if(count($previewAvanco) > 0)
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-success mb-2">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {{ count($previewAvanco) }} turma(s) serão avançadas:
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Turma</th>
+                                        <th>Curso</th>
+                                        <th class="text-center">Semestre Atual</th>
+                                        <th class="text-center">Novo Semestre</th>
+                                        <th class="text-center">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($previewAvanco as $item)
+                                    <tr>
+                                        <td class="fw-medium">{{ $item['nome'] }}</td>
+                                        <td><span class="badge bg-secondary">{{ $item['curso'] }}</span></td>
+                                        <td class="text-center">{{ $item['semestre_atual'] }}º</td>
+                                        <td class="text-center text-success fw-bold">{{ $item['semestre_novo'] }}º</td>
+                                        <td class="text-center text-muted">{{ $item['max'] }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @else
+                    <div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>Nenhuma turma para avançar.</div>
+                    @endif
+
+                    @if(count($previewConcluidas) > 0)
+                    <div>
+                        <h6 class="fw-bold text-muted mb-2">
+                            <i class="bi bi-mortarboard me-1"></i>
+                            {{ count($previewConcluidas) }} turma(s) já estão no último semestre (não serão alteradas):
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($previewConcluidas as $item)
+                            <span class="badge bg-light text-dark border" style="font-size:12px">
+                                {{ $item['nome'] }} — {{ $item['semestre'] }}º sem (concluído)
+                            </span>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" wire:click="cancelarAvanco">Cancelar</button>
+                    @if(count($previewAvanco) > 0)
+                    <button type="button" class="btn btn-warning" wire:click="confirmarAvanco" wire:loading.attr="disabled">
+                        <span wire:loading wire:target="confirmarAvanco" class="spinner-border spinner-border-sm me-1"></span>
+                        <i wire:loading.remove wire:target="confirmarAvanco" class="bi bi-arrow-up-circle me-1"></i>
+                        Confirmar Avanço de {{ count($previewAvanco) }} Turma(s)
+                    </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     @if($showModal)
     <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5)">

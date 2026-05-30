@@ -228,31 +228,62 @@
                                 @endif
                                 <div class="card-body p-3">
                                     @if(!$sel_disciplina_id)
-                                    {{-- Passo 1: Buscar disciplina --}}
-                                    <label class="form-label fw-medium small mb-1"><span class="badge bg-primary me-1">1</span>Buscar Disciplina <span class="text-danger">*</span></label>
-                                    <div class="input-group input-group-sm mb-1">
-                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="text" wire:model.live.debounce.300ms="buscaDisciplina" class="form-control" placeholder="Digite o nome da disciplina (mín. 2 caracteres)...">
-                                        @if($buscaDisciplina)<button class="btn btn-outline-secondary btn-sm" wire:click="$set('buscaDisciplina', '')"><i class="bi bi-x"></i></button>@endif
+                                    {{-- Filtro Curso + Turma --}}
+                                    <div class="mb-2">
+                                        <label class="form-label fw-medium small mb-1">
+                                            <span class="badge bg-primary me-1">1</span>Curso
+                                        </label>
+                                        <select wire:model.live="filtro_curso_id" class="form-select form-select-sm">
+                                            <option value="">Selecione o curso...</option>
+                                            @foreach($cursosFiltro as $c)
+                                            <option value="{{ $c->id }}">{{ $c->sigla }} — {{ $c->nome }}</option>
+                                            @endforeach
+                                        </select>
+                                        @if($filtro_curso_id && count($turmasFiltro) === 0)
+                                        <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Nenhuma turma ativa para este curso.</div>
+                                        @endif
                                     </div>
+
+                                    @if($filtro_curso_id)
+                                    <div class="mb-2">
+                                        <label class="form-label fw-medium small mb-1">
+                                            <span class="badge bg-primary me-1">2</span>Turma
+                                        </label>
+                                        <select wire:model.live="filtro_turma_id" class="form-select form-select-sm">
+                                            <option value="">Selecione a turma...</option>
+                                            @foreach($turmasFiltro as $t)
+                                            <option value="{{ $t->id }}">{{ $t->nome }} — {{ $t->semestre }}º sem</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @endif
+
+                                    {{-- Lista de disciplinas do semestre da turma --}}
                                     @if($mostrarLista)
-                                    <div class="border rounded bg-white" style="max-height:220px;overflow-y:auto">
-                                        @forelse($disciplinasDisponiveis as $disc)
-                                        <button type="button"
-                                            wire:click="selecionarDisciplina({{ $disc['id'] }}, '{{ addslashes($disc['nome']) }}', '{{ addslashes($disc['curso_nome']) }}', {{ $disc['curso_id'] }}, {{ $disc['turma_id'] }}, '{{ addslashes($disc['turma_nome']) }}')"
-                                            class="list-group-item list-group-item-action border-0 py-2 px-3 text-start w-100">
-                                            <div class="fw-medium" style="font-size:13px">
-                                                {{ $disc['nome'] }}
-                                                <span class="badge bg-primary ms-1" style="font-size:10px">{{ $disc['turma_nome'] }}</span>
+                                    <div class="mb-1">
+                                        <label class="form-label fw-medium small mb-1">
+                                            <span class="badge bg-primary me-1">3</span>Disciplina
+                                            <span class="text-muted fw-normal">({{ $filtro_semestre ?? '' }}º semestre)</span>
+                                        </label>
+                                        <div class="border rounded bg-white" style="max-height:200px;overflow-y:auto">
+                                            @forelse($disciplinasDisponiveis as $disc)
+                                            <button type="button"
+                                                wire:click="selecionarDisciplina({{ $disc['id'] }}, '{{ addslashes($disc['nome']) }}', '{{ addslashes($disc['curso_nome']) }}', {{ $disc['curso_id'] }})"
+                                                class="list-group-item list-group-item-action border-0 py-2 px-3 text-start w-100">
+                                                <div class="fw-medium" style="font-size:13px">{{ $disc['nome'] }}</div>
+                                                <div class="text-muted" style="font-size:11px">
+                                                    <i class="bi bi-mortarboard me-1"></i>{{ $disc['curso_nome'] }}
+                                                    &nbsp;·&nbsp;{{ $disc['semestre'] }}º semestre
+                                                </div>
+                                            </button>
+                                            @empty
+                                            <div class="text-center text-muted py-3 small">
+                                                <i class="bi bi-check-circle me-1 text-success"></i>
+                                                Todas as disciplinas deste semestre já foram vinculadas
                                             </div>
-                                            <div class="text-muted" style="font-size:11px"><i class="bi bi-mortarboard me-1"></i>{{ $disc['curso_nome'] }}</div>
-                                        </button>
-                                        @empty
-                                        <div class="text-center text-muted py-3 small"><i class="bi bi-search me-1"></i>Nenhuma disciplina encontrada</div>
-                                        @endforelse
+                                            @endforelse
+                                        </div>
                                     </div>
-                                    @elseif(strlen($buscaDisciplina) === 1)
-                                    <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Digite mais um caractere...</div>
                                     @endif
 
                                     @else
@@ -260,10 +291,6 @@
                                     <div class="rounded p-2 mb-2 border border-primary" style="background:#e8f0fe">
                                         <div class="fw-semibold" style="font-size:13px;color:#1a56db">
                                             <i class="bi bi-check-circle-fill me-1"></i>{{ $sel_disciplina_nome }}
-                                            @if($sel_turma_id)
-                                            @php $t = \App\Models\Turma::find($sel_turma_id); @endphp
-                                            <span class="badge bg-primary ms-1" style="font-size:10px">{{ $t?->nome }}</span>
-                                            @endif
                                         </div>
                                         <div class="text-muted" style="font-size:11px"><i class="bi bi-mortarboard me-1"></i>{{ $sel_curso_nome }}</div>
                                     </div>
@@ -281,11 +308,17 @@
 
                                     {{-- Botão Adicionar / Salvar Edição --}}
                                     @if($sel_disciplina_id)
-                                    <button type="button" wire:click="adicionarVinculo"
-                                        class="btn btn-sm w-100 mt-1 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}">
-                                        <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>
-                                        {{ $editandoVinculoIdx >= 0 ? 'Salvar Alteração' : 'Adicionar Vínculo' }}
-                                    </button>
+                                    <div class="d-flex gap-2 mt-1">
+                                        <button type="button" wire:click="cancelarSelecao"
+                                            class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                                        </button>
+                                        <button type="button" wire:click="adicionarVinculo"
+                                            class="btn btn-sm w-100 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}">
+                                            <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>
+                                            {{ $editandoVinculoIdx >= 0 ? 'Salvar Alteração' : 'Adicionar Vínculo' }}
+                                        </button>
+                                    </div>
                                     @endif
                                 </div>
                             </div>

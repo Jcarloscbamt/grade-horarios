@@ -165,6 +165,17 @@
                             <div class="form-text">Formatação automática ao digitar</div>
                         </div>
 
+                        {{-- Total de Semestres --}}
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Total de Semestres <span class="text-danger">*</span></label>
+                            <select wire:model="total_semestres" class="form-select">
+                                @for($s = 1; $s <= 10; $s++)
+                                <option value="{{ $s }}">{{ $s }} semestre{{ $s > 1 ? 's' : '' }} ({{ ceil($s/2) }} ano{{ ceil($s/2) > 1 ? 's' : '' }})</option>
+                                @endfor
+                            </select>
+                            <div class="form-text">Ex: 6 semestres = 3 anos</div>
+                        </div>
+
                         {{-- Status --}}
                         <div class="col-12">
                             <div class="form-check form-switch">

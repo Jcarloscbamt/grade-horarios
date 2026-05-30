@@ -83,7 +83,13 @@ class GeradorGrade extends Component
 
             $vinculos = ProfessorDisciplina::where('turma_id', $turmaId)
                 ->with(['professor', 'disciplina'])
-                ->get();
+                ->get()
+                ->filter(function($v) use ($turma) {
+                    $semDisc = $v->disciplina->semestre_grade ?? null;
+                    if (!$semDisc) return true;
+                    return (int)$semDisc === (int)$turma->semestre;
+                });
+
 
             if ($vinculos->isEmpty()) {
                 $this->conflitos[] = [

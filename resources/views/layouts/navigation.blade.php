@@ -181,8 +181,8 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
 
 {{-- ═══ TOPBAR ═══ --}}
 <div class="topbar">
-    <button class="topbar-toggle" id="sidebarToggle" title="Menu">
-        <i class="bi bi-list"></i>
+    <button class="topbar-toggle" id="sidebarToggle" title="Recolher menu">
+        <i class="bi bi-chevron-double-left" id="sidebarToggleIcon"></i>
     </button>
     <a class="topbar-brand" href="{{ route('grade') }}">
         <img src="https://unisenaimt.com.br/img/logo-unisenai.png" alt="UniSENAI"
@@ -338,6 +338,17 @@ if (!isMobile && savedState === 'true') {
     document.body.classList.add('sidebar-collapsed');
 }
 
+function updateToggleIcon() {
+    var icon = document.getElementById('sidebarToggleIcon');
+    if (!icon) return;
+    var collapsed = sidebar.classList.contains('collapsed');
+    icon.className = collapsed ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
+    document.getElementById('sidebarToggle').title = collapsed ? 'Expandir menu' : 'Recolher menu';
+}
+
+// Atualiza ícone no carregamento
+updateToggleIcon();
+
 document.getElementById('sidebarToggle').addEventListener('click', function() {
     if (window.innerWidth <= 768) {
         sidebar.classList.toggle('mobile-open');
@@ -345,8 +356,9 @@ document.getElementById('sidebarToggle').addEventListener('click', function() {
             sidebar.classList.contains('mobile-open') ? 'block' : 'none';
     } else {
         sidebar.classList.toggle('collapsed');
-        document.body.classList.toggle('sidebar-collapsed'); // ← usa body, sempre disponível
+        document.body.classList.toggle('sidebar-collapsed');
         localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+        updateToggleIcon();
     }
 });
 

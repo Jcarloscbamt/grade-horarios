@@ -21,7 +21,8 @@ class ProfessoresCrud extends Component
 
     // ── Vínculos disciplina/turma ─────────────────────
     public array  $vinculos           = []; // [{disciplina_id, disciplina_nome, curso_id, curso_nome, turma_id, turma_nome, dias}]
-    public string $buscaDisciplina    = '';
+    public string $filtro_curso_id   = '';
+    public string $filtro_turma_id   = '';
     public int    $sel_disciplina_id  = 0;
     public string $sel_disciplina_nome = '';
     public int    $sel_curso_id       = 0;
@@ -177,14 +178,14 @@ class ProfessoresCrud extends Component
     public function getSel_disciplinaIdProperty(): int { return $this->sel_disciplina_id; }
 
     // ── Selecionar disciplina da lista ────────────────
-    public function selecionarDisciplina(int $id, string $nome, string $cursoNome, int $cursoId, int $turmaId, string $turmaNome): void
+    public function selecionarDisciplina(int $id, string $nome, string $cursoNome, int $cursoId): void
     {
         $this->sel_disciplina_id   = $id;
         $this->sel_disciplina_nome = $nome;
         $this->sel_curso_id        = $cursoId;
         $this->sel_curso_nome      = $cursoNome;
-        $this->sel_turma_id        = (string) $turmaId;
-        $this->buscaDisciplina     = '';
+        $this->sel_turma_id        = $this->filtro_turma_id;
+        $this->filtro_turma_id    = '';
     }
 
     public function cancelarSelecao(): void
@@ -194,7 +195,8 @@ class ProfessoresCrud extends Component
         $this->sel_curso_id        = 0;
         $this->sel_curso_nome      = '';
         $this->sel_turma_id        = '';
-        $this->buscaDisciplina     = '';
+        $this->filtro_curso_id    = '';
+        $this->filtro_turma_id    = '';
         $this->editandoVinculoIdx  = -1;
     }
 
@@ -243,7 +245,8 @@ class ProfessoresCrud extends Component
         $this->sel_curso_nome      = $v['curso_nome'];
         $this->sel_turma_id        = (string) $v['turma_id'];
         $this->editandoVinculoIdx  = $idx;
-        $this->buscaDisciplina     = '';
+        $this->filtro_curso_id    = '';
+        $this->filtro_turma_id    = '';
     }
 
     public function removerVinculo(int $idx): void
@@ -424,7 +427,8 @@ class ProfessoresCrud extends Component
         $this->ativo               = true;
         $this->disponibilidade     = [];
         $this->vinculos            = [];
-        $this->buscaDisciplina     = '';
+        $this->filtro_curso_id    = '';
+        $this->filtro_turma_id    = '';
         $this->sel_disciplina_id   = 0;
         $this->sel_disciplina_nome = '';
         $this->sel_curso_id        = 0;
@@ -432,6 +436,19 @@ class ProfessoresCrud extends Component
         $this->sel_turma_id        = '';
         $this->editandoVinculoIdx  = -1;
         $this->resetValidation();
+    }
+
+    public function updatedFiltroCursoId(): void
+    {
+        $this->filtro_turma_id   = '';
+        $this->sel_disciplina_id = 0;
+        $this->sel_disciplina_nome = '';
+    }
+
+    public function updatedFiltroTurmaId(): void
+    {
+        $this->sel_disciplina_id   = 0;
+        $this->sel_disciplina_nome = '';
     }
 
     public function updatingSearch(): void { $this->resetPage(); }
@@ -459,42 +476,44 @@ class ProfessoresCrud extends Component
 
         $diasNomes = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
-        // Busca de disciplinas+turma combinadas
-        $disciplinasDisponiveis = [];
-        $mostrarLista = strlen($this->buscaDisciplina) >= 2;
-        if ($mostrarLista) {
-            // Busca disciplinas e combina com turmas do mesmo curso
-            $disciplinas = Disciplina::with('curso')
-                ->where('ativo', true)
-                ->where('nome', 'like', '%' . $this->buscaDisciplina . '%')
-                ->orderBy('nome')
-                ->get();
-
-            foreach ($disciplinas as $d) {
-                $turmas = Turma::where('curso_id', $d->curso_id)
-                    ->where('ativo', true)
-                    ->orderBy('nome')
-                    ->get();
-
-                foreach ($turmas as $t) {
-                    $disciplinasDisponiveis[] = [
-                        'id'         => $d->id,
-                        'nome'       => $d->nome,
-                        'turma_id'   => $t->id,
-                        'turma_nome' => $t->nome,
-                        'label'      => $d->nome . ' — ' . $t->nome,
-                        'curso_nome' => $d->curso->nome ?? '',
-                        'curso_id'   => $d->curso_id,
-                    ];
-                }
-            }
+        // Filtros por Curso + Turma
+        $cursosFiltro = \App\Models\Curso::where('ativo', true)->orderBy('nome')->get();
+        $turmasFiltro = [];
+        if ($this->filtro_curso_id) {
+            $turmasFiltro = Turma::where('curso_id', $this->filtro_curso_id)
+                ->where('ativo', true)->orderBy('nome')->get();
         }
 
-        $turmasDoVinculo = []; // mantido por compatibilidade
+        // Disciplinas do semestre atual da turma selecionada
+        $disciplinasDisponiveis = [];
+        $mostrarLista = !empty($this->filtro_turma_id);
+        if ($mostrarLista) {
+            $turmaFiltro = Turma::with('curso')->find($this->filtro_turma_id);
+            if ($turmaFiltro) {
+                $jaVinculadas = collect($this->vinculos)
+                    ->where('turma_id', (int) $this->filtro_turma_id)
+                    ->pluck('disciplina_id')->toArray();
+                $disciplinasDisponiveis = Disciplina::where('curso_id', $turmaFiltro->curso_id)
+                    ->where('ativo', true)
+                    ->where('semestre_grade', $turmaFiltro->semestre)
+                    ->whereNotIn('id', $jaVinculadas)
+                    ->orderBy('nome')
+                    ->get()
+                    ->map(fn($d) => [
+                        'id'         => $d->id,
+                        'nome'       => $d->nome,
+                        'semestre'   => $d->semestre_grade,
+                        'curso_nome' => $turmaFiltro->curso->nome ?? '',
+                        'curso_id'   => $d->curso_id,
+                    ])->toArray();
+            }
+        }
+        $turmasDoVinculo = [];
 
         return view('livewire.professores-crud', compact(
             'professores', 'diasNomes',
-            'disciplinasDisponiveis', 'mostrarLista', 'turmasDoVinculo'
+            'disciplinasDisponiveis', 'mostrarLista', 'turmasDoVinculo',
+            'cursosFiltro', 'turmasFiltro'
         ));
     }
 }

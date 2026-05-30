@@ -155,6 +155,66 @@ class PeriodosLetivosCrud extends Component
         $this->resetValidation();
     }
 
+
+    // ── Avançar Semestre das Turmas ─────────────────
+    public bool  $showAvancar    = false;
+    public array $previewAvanco  = []; // turmas que serão avançadas
+    public array $previewConcluidas = []; // turmas no último semestre
+
+    public function prepararAvanco(): void
+    {
+        $this->previewAvanco     = [];
+        $this->previewConcluidas = [];
+
+        $turmas = \App\Models\Turma::with('curso')->where('ativo', true)->get();
+
+        foreach ($turmas as $t) {
+            $maxSem = $t->curso->total_semestres ?? 6;
+            if ($t->semestre < $maxSem) {
+                $this->previewAvanco[] = [
+                    'id'           => $t->id,
+                    'nome'         => $t->nome,
+                    'curso'        => $t->curso->sigla ?? '',
+                    'semestre_atual' => $t->semestre,
+                    'semestre_novo'  => $t->semestre + 1,
+                    'max'          => $maxSem,
+                ];
+            } else {
+                $this->previewConcluidas[] = [
+                    'id'     => $t->id,
+                    'nome'   => $t->nome,
+                    'curso'  => $t->curso->sigla ?? '',
+                    'semestre' => $t->semestre,
+                ];
+            }
+        }
+
+        $this->showAvancar = true;
+    }
+
+    public function confirmarAvanco(): void
+    {
+        $count = 0;
+        foreach ($this->previewAvanco as $item) {
+            \App\Models\Turma::where('id', $item['id'])
+                ->increment('semestre');
+            $count++;
+        }
+
+        \App\Models\Log::registrar('editou', 'Turmas', "Avançou semestre de {$count} turma(s)");
+        $this->showAvancar       = false;
+        $this->previewAvanco     = [];
+        $this->previewConcluidas = [];
+        session()->flash('success', "Semestre avançado em {$count} turma(s) com sucesso!");
+    }
+
+    public function cancelarAvanco(): void
+    {
+        $this->showAvancar       = false;
+        $this->previewAvanco     = [];
+        $this->previewConcluidas = [];
+    }
+
     public function updatingSearch(): void { $this->resetPage(); }
 
     public function render()
