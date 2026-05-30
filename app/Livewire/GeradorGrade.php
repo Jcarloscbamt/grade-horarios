@@ -223,9 +223,26 @@ class GeradorGrade extends Component
                 }
 
                 if (!$alocado) {
+                    // Sugere apenas O MELHOR DIA livre (sem conflito de professor e turma)
+                    $diasLivres = [];
+                    $nomeDias   = [1=>'SEG',2=>'TER',3=>'QUA',4=>'QUI',5=>'SEX'];
+                    foreach (range(1, 5) as $d) {
+                        $profOcupado  = isset($ocupProfessor[$d][$professor->id]);
+                        $turmaOcupada = isset($ocupTurma[$d]);
+                        if (!$profOcupado && !$turmaOcupada) {
+                            $diasLivres = [['num' => $d, 'nome' => $nomeDias[$d]]]; // apenas o primeiro
+                            break;
+                        }
+                    }
                     $this->conflitos[] = [
-                        'tipo'     => 'sem_dia',
-                        'mensagem' => "{$turma->nome} — Não foi possível alocar {$disciplina->nome} ({$professor->nome}): todos os dias têm conflito.",
+                        'tipo'          => 'sem_dia',
+                        'mensagem'      => "{$turma->nome} — {$disciplina->nome} ({$professor->nome}): todos os dias disponíveis têm conflito.",
+                        'professor_id'  => $professor->id,
+                        'professor'     => $professor->nome,
+                        'turma_id'      => $turmaId,
+                        'disciplina_id' => $disciplina->id,
+                        'disciplina'    => $disciplina->nome,
+                        'dias_livres'   => $diasLivres,
                     ];
                 }
             }
@@ -237,6 +254,9 @@ class GeradorGrade extends Component
             if ($a['dia_semana']  !== $b['dia_semana'])  return $a['dia_semana'] <=> $b['dia_semana'];
             return $a['horario_id'] <=> $b['horario_id'];
         });
+
+        // Ordena conflitos em ordem crescente
+        usort($this->conflitos, fn($a, $b) => strcmp($a['mensagem'], $b['mensagem']));
 
         $this->previewGerado = true;
         session()->flash('success', count($this->preview) . ' aula(s) gerada(s) na prévia.');
@@ -291,6 +311,45 @@ class GeradorGrade extends Component
     private function nomeDia(int $num): string
     {
         return [1=>'Segunda',2=>'Terça',3=>'Quarta',4=>'Quinta',5=>'Sexta'][$num] ?? "Dia {$num}";
+    }
+
+
+    // ── Aceitar sugestão de dia e regerar ──────────────────
+    public function aceitarSugestao(int $professorId, int $turmaId, int $disciplinaId, array $diasSugeridos): void
+    {
+        // 1. Atualiza os dias do vínculo professor-disciplina-turma
+        $vinculo = \App\Models\ProfessorDisciplina::where('professor_id', $professorId)
+            ->where('turma_id', $turmaId)
+            ->where('disciplina_id', $disciplinaId)
+            ->first();
+
+        if ($vinculo) {
+            $diasAtuais = is_array($vinculo->dias) ? $vinculo->dias : (json_decode($vinculo->dias ?? '[]', true) ?? []);
+            $novosDias  = array_values(array_unique(array_merge(
+                array_map('intval', $diasAtuais),
+                array_map('intval', $diasSugeridos)
+            )));
+            $vinculo->dias = $novosDias;
+            $vinculo->save();
+        }
+
+        // 2. Atualiza disponibilidade geral do professor
+        $professor = \App\Models\Professor::find($professorId);
+        if ($professor) {
+            $dispAtual = is_array($professor->disponibilidade)
+                ? $professor->disponibilidade
+                : (json_decode($professor->disponibilidade ?? '[]', true) ?? []);
+            $novaDisp = array_values(array_unique(array_merge(
+                array_map('intval', $dispAtual),
+                array_map('intval', $diasSugeridos)
+            )));
+            $professor->disponibilidade = $novaDisp;
+            $professor->save();
+        }
+
+        // 3. Regera a prévia automaticamente
+        $this->gerarPrevia();
+        session()->flash('success', 'Dias atualizados! Grade regeada automaticamente.');
     }
 
     public function render()

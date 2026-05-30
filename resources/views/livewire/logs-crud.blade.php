@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/logs-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Log de Alterações</h4>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Log de Alterações</h4> <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button>
             <small class="text-muted">Histórico de ações realizadas no sistema</small>
         </div>
     </div>
@@ -140,4 +140,15 @@
         </div>
         @endif
     </div>
+
+
+<x-help-modal titulo="Ajuda — Logs">
+<p class="text-muted mb-3">Histórico de todas as alterações feitas no sistema.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Ação:</strong> Criou, editou ou excluiu</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Módulo:</strong> Qual tela foi alterada</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Usuário:</strong> Quem fez a alteração e quando</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>IP:</strong> Endereço de rede do dispositivo usado</li>
+</ul>
+</x-help-modal>
 </div>

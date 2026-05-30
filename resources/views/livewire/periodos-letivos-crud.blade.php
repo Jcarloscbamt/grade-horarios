@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/periodos-letivos-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Períodos Letivos</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Períodos Letivos <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Calendário acadêmico e datas de avaliação</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -241,4 +241,18 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Períodos Letivos">
+<p class="text-muted mb-3">Define os semestres letivos do ano com datas de avaliação.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Período Ativo:</strong> Apenas um período pode estar ativo por vez. O Gerador usa o período ativo por padrão</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Avançar Semestre:</strong> Ao iniciar um novo período, clique em "Avançar Semestre das Turmas" para incrementar o semestre de todas as turmas ativas automaticamente</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Datas de Avaliação:</strong> Aparecem no rodapé da grade impressa</li>
+</ul>
+<div class="alert alert-info py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-lightbulb me-1"></i>
+    Fluxo correto: Criar período → Ativar → Avançar semestres → Gerar grades.
+</div>
+</x-help-modal>
 </div>

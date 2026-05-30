@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/horarios-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Horários</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Horários <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Blocos de horário das aulas</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -117,4 +117,18 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Horários">
+<p class="text-muted mb-3">Define os blocos de horário disponíveis para as aulas.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Tipo Aula:</strong> Horário normal utilizado pelo Gerador de Grade</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Tipo Intervalo:</strong> Horários marcados como intervalo são ignorados pelo Gerador</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Ordem:</strong> Os horários aparecem na grade ordenados por hora de início</li>
+</ul>
+<div class="alert alert-info py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-lightbulb me-1"></i>
+    Exemplo para noturno: 18:45–20:30 e 20:45–22:00 como "Aula", e 20:30–20:45 como "Intervalo".
+</div>
+</x-help-modal>
 </div>

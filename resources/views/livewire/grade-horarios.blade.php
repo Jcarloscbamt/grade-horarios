@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/grade-horarios.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0">Grade de Horários</h2>
+            <h2 class="fw-bold mb-0">Grade de Horários <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Visualização da grade por turma e período letivo</small>
         </div>
         {{-- Botões de impressão por turma selecionada --}}
@@ -295,4 +295,13 @@
     @endforeach
     @endif
 
+
+<x-help-modal titulo="Ajuda — Grade de Horários">
+<p class="text-muted mb-3">Visualização da grade de horários por turma e período letivo.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por curso, turmas e período letivo</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Imprimir:</strong> Gera PDF colorido da grade</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Online:</strong> Disciplinas online aparecem com 🌐 sem sala física</li>
+</ul>
+</x-help-modal>
 </div>

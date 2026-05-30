@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\{Professor, Disciplina, Turma, ProfessorDisciplina, Log};
 use Livewire\Component;
+use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 
 class ProfessoresCrud extends Component
@@ -255,6 +256,17 @@ class ProfessoresCrud extends Component
     }
 
     // ── CRUD ──────────────────────────────────────────
+    #[Url]
+    public int $editar = 0;
+
+    public function mount(): void
+    {
+        // Abre edição via URL ?editar=ID (ex: vindo do gerador de grade)
+        if ($this->editar > 0) {
+            $this->edit($this->editar);
+        }
+    }
+
     public function create(): void
     {
         $this->resetForm();

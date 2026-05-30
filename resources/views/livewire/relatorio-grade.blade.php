@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/relatorio-grade.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#E30613"></i>Relatório — Grade de Horários</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#E30613"></i>Relatório — Grade de Horários <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Visualize e exporte a grade por turma e período letivo</small>
         </div>
         @if($totalAulas > 0)
@@ -194,4 +194,13 @@
             .card { box-shadow: none !important; border: 1px solid #ddd !important; }
         }
     </style>
+
+
+<x-help-modal titulo="Ajuda — Relatório de Grade">
+<p class="text-muted mb-3">Relatório tabular com todas as aulas organizadas por turma e período.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Combine curso, turma e período letivo para refinar a exibição</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Exportar:</strong> Exporte os dados para CSV ou imprima em PDF</li>
+</ul>
+</x-help-modal>
 </div>

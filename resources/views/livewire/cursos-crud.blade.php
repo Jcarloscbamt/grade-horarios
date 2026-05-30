@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/cursos-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Cursos</h4>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Cursos</h4> <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button>
             <small class="text-muted">Gerenciamento de cursos da instituição</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -242,4 +242,19 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Cursos">
+<p class="text-muted mb-3">Cadastro dos cursos oferecidos pela instituição.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nome e Sigla:</strong> Ex: Análise e Desenvolvimento de Sistemas / ADS</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Total de Semestres:</strong> Define até quando as turmas podem avançar. Ex: 6 semestres = 3 anos</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Cor da Grade:</strong> Cor de destaque usada na impressão da grade de horários</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Coordenador:</strong> Aparece no rodapé da grade impressa para contato</li>
+</ul>
+<div class="alert alert-warning py-2 mt-3" style="font-size:12px">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    O total de semestres é usado pelo botão "Avançar Semestre" em Períodos Letivos para saber quando a turma conclui o curso.
+</div>
+</x-help-modal>
 </div>

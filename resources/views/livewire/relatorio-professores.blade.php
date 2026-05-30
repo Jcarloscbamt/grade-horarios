@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/relatorio-professores.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0"><i class="bi bi-person-lines-fill me-2" style="color:#E30613"></i>Relatório — Professores por Disciplina</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0"><i class="bi bi-person-lines-fill me-2" style="color:#E30613"></i>Relatório — Professores por Disciplina <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Consulte os vínculos de professores, disciplinas e turmas</small>
         </div>
         <div class="d-flex gap-2 d-print-none">
@@ -219,4 +219,14 @@
             .card { box-shadow: none !important; }
         }
     </style>
+
+
+<x-help-modal titulo="Ajuda — Relatório de Professores">
+<p class="text-muted mb-3">Lista todos os professores com suas disciplinas e turmas vinculadas.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por nome, curso, turma ou status</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Identificar Duplicados:</strong> Clique no botão vermelho para encontrar disciplinas com mais de um professor vinculado para a mesma turma</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Exportar CSV:</strong> Gera planilha com todos os dados filtrados</li>
+</ul>
+</x-help-modal>
 </div>

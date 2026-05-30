@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/disciplinas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div><h4 class="fw-bold mb-0">Disciplinas</h4><small class="text-muted">Gerenciamento de disciplinas dos cursos</small></div>
+        <div class="d-flex align-items-center gap-2"><h4 class="fw-bold mb-0">Disciplinas</h4> <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button><small class="text-muted">Gerenciamento de disciplinas dos cursos</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Disciplina</button>
         @endhasanyrole
@@ -239,4 +239,19 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Disciplinas">
+<p class="text-muted mb-3">Disciplinas são as matérias que compõem cada semestre do curso.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Semestre na Grade:</strong> Em qual semestre do curso esta disciplina é ministrada. Ex: Banco de Dados → 3º semestre</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Tipo de Sala:</strong> Obrigatório. Define qual sala o gerador vai alocar automaticamente</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Online:</strong> Disciplina remota. O gerador não aloca sala física e marca como Online na grade</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Bloco Preferencial:</strong> O gerador tentará salas deste bloco primeiro</li>
+</ul>
+<div class="alert alert-warning py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    O semestre da disciplina é usado pelo Gerador de Grade para alocar apenas as disciplinas do semestre atual de cada turma.
+</div>
+</x-help-modal>
 </div>

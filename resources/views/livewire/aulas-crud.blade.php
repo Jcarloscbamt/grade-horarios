@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/aulas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div><h4 class="fw-bold mb-0">Aulas</h2><small class="text-muted">Grade de horários — aulas por turma e período letivo</small></div>
+        <div class="d-flex align-items-center gap-2"><h4 class="fw-bold mb-0">Aulas <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2><small class="text-muted">Grade de horários — aulas por turma e período letivo</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Aula</button>
         @endhasanyrole
@@ -286,4 +286,18 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Aulas">
+<p class="text-muted mb-3">Visualização e gerenciamento manual das aulas geradas.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Geração automática:</strong> As aulas são criadas pelo Gerador de Grade. Use esta tela para ajustes manuais</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por turma, professor, sala, período letivo e dia da semana</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Modalidade:</strong> Presencial ou Online. Aulas online não têm sala física</li>
+</ul>
+<div class="alert alert-warning py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    Para gerar todas as aulas de uma vez, use o <strong>Gerador de Grade</strong>.
+</div>
+</x-help-modal>
 </div>

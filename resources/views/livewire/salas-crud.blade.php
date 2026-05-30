@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/salas-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div><h4 class="fw-bold mb-0">Salas</h2><small class="text-muted">Gerenciamento de salas e laboratórios</small></div>
+        <div class="d-flex align-items-center gap-2"><h4 class="fw-bold mb-0">Salas <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2><small class="text-muted">Gerenciamento de salas e laboratórios</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Sala</button>
         @endhasanyrole
@@ -161,4 +161,15 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Salas">
+<p class="text-muted mb-3">Cadastro das salas físicas disponíveis para alocação automática.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Tipo:</strong> Sala de Aula ou Laboratório. Deve corresponder ao tipo definido na disciplina</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Bloco:</strong> O Gerador tenta alocar o bloco preferencial da disciplina primeiro, depois qualquer bloco</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Capacidade:</strong> Informativo, não interfere na alocação automática</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Ativo/Inativo:</strong> Salas inativas não são consideradas pelo Gerador</li>
+</ul>
+</x-help-modal>
 </div>

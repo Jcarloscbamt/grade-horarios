@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/professores-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Professores</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Professores <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Gerenciamento de professores e suas disciplinas</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -399,4 +399,18 @@
         </div>
     </div>
     @endif
+
+
+<x-help-modal titulo="Ajuda — Professores">
+<p class="text-muted mb-3">Cadastro de professores com suas disponibilidades e vínculos com disciplinas.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Disponibilidade Geral:</strong> Dias da semana em que o professor pode lecionar. <strong>Obrigatório.</strong></li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Vínculos:</strong> Define quais disciplinas/turmas o professor leciona. Filtro: Curso → Turma → Disciplinas do semestre</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Regra:</strong> Um professor não pode dar aula no mesmo dia para turmas diferentes. O Gerador controla isso automaticamente</li>
+</ul>
+<div class="alert alert-info py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-lightbulb me-1"></i>
+    Ao alterar a disponibilidade e salvar, todos os vínculos são atualizados automaticamente com os novos dias.
+</div>
+</x-help-modal>
 </div>

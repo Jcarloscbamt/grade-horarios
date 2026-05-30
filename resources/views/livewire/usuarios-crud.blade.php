@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/usuarios-crud.blade.php --}}
 <div>
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>
-            <h4 class="fw-bold mb-0">Usuários</h2>
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold mb-0">Usuários <button type="button" data-bs-toggle="modal" data-bs-target="#helpModal" class="btn btn-outline-secondary btn-sm rounded-circle ms-1" style="width:24px;height:24px;padding:0;font-size:12px;line-height:1" title="Ajuda">?</button></h2>
             <small class="text-muted">Gerenciamento de usuários e perfis de acesso</small>
         </div>
         <button wire:click="create" class="btn btn-primary">
@@ -265,4 +265,15 @@
     </div>
     @endif
 
+
+
+<x-help-modal titulo="Ajuda — Usuários">
+<p class="text-muted mb-3">Gerenciamento de acesso ao sistema. Disponível apenas para Administradores.</p>
+<ul class="list-unstyled">
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Admin:</strong> Acesso total ao sistema, incluindo usuários e logs</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Coordenador:</strong> Acesso a cadastros, gerador e relatórios</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Consulta:</strong> Apenas visualização da grade e relatórios</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Troca de Senha:</strong> Na primeira entrada o usuário é obrigado a trocar a senha</li>
+</ul>
+</x-help-modal>
 </div>
