@@ -1,18 +1,7 @@
 {{-- resources/views/components/help-modal.blade.php --}}
+{{-- Apenas o modal — o botão ? é adicionado inline em cada tela --}}
 @props(['titulo' => 'Ajuda', 'id' => 'helpModal'])
 
-<span>
-{{-- Botão ? --}}
-<button type="button"
-    data-bs-toggle="modal"
-    data-bs-target="#{{ $id }}"
-    class="btn btn-outline-secondary btn-sm rounded-circle"
-    style="width:30px;height:30px;padding:0;font-weight:bold;font-size:14px"
-    title="Ajuda">
-    ?
-</button>
-
-{{-- Modal --}}
 <div class="modal fade" id="{{ $id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
@@ -31,5 +20,3 @@
         </div>
     </div>
 </div>
-
-</span>

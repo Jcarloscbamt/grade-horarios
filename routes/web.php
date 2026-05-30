@@ -56,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Somente Admin
     Route::get('/usuarios', \App\Livewire\UsuariosCrud::class)->middleware('role:admin')->name('usuarios');
     Route::get('/logs',     \App\Livewire\LogsCrud::class)->middleware('role:admin')->name('logs');
+
+    Route::get('/ajuda', \App\Livewire\Ajuda::class)->name('ajuda');
+
 });
 
 require __DIR__ . '/auth.php';

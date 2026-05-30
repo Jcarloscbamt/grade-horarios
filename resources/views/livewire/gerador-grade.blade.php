@@ -144,7 +144,7 @@
                         </div>
                         <div class="text-muted mt-1" style="font-size:11px">
                             <i class="bi bi-info-circle me-1"></i>
-                            Ao aceitar, este dia será adicionado ao cadastro do professor e a grade será regerada.
+                            Ao aceitar, este dia será adicionado à disponibilidade do professor e a grade será regerada automaticamente.
                         </div>
                     </div>
                     @elseif(isset($c['professor_id']))

@@ -314,6 +314,14 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
     </div>
 
     {{-- Admin --}}
+    {{-- Ajuda --}}
+    <div class="sidebar-section">
+        <a href="{{ route('ajuda') }}" data-tooltip="Manual do Sistema"
+           class="sidebar-link {{ request()->routeIs('ajuda') ? 'active' : '' }}">
+            <i class="bi bi-question-circle"></i><span>Manual / Ajuda</span>
+        </a>
+    </div>
+
     @hasrole('admin')
     <div class="sidebar-section">
         <div class="sidebar-label">Administração</div>

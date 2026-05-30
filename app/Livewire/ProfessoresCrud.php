@@ -326,6 +326,24 @@ class ProfessoresCrud extends Component
             return;
         }
 
+        // Valida: dias disponíveis >= número de turmas distintas vinculadas
+        // Cada turma diferente precisa de um dia exclusivo para o professor
+        $turmasDistintas = collect($this->vinculos)
+            ->pluck('turma_id')
+            ->unique()
+            ->count();
+        $diasDisponiveis = count($this->disponibilidade);
+
+        if ($turmasDistintas > 0 && $diasDisponiveis < $turmasDistintas) {
+            $faltam = $turmasDistintas - $diasDisponiveis;
+            $this->addError('disponibilidade',
+                "Disponibilidade insuficiente: o professor leciona em {$turmasDistintas} turma(s) diferentes, " .
+                "mas tem apenas {$diasDisponiveis} dia(s) disponível(is). " .
+                "Adicione ao menos mais {$faltam} dia(s)."
+            );
+            return;
+        }
+
         // Validação matemática do CPF (não usa closure para compatibilidade com Livewire 3)
         $cpfDigits = preg_replace('/\D/', '', $this->cpf);
         if (!$this->validarCPF($cpfDigits)) {
