@@ -8,6 +8,7 @@ use Livewire\Component;
 
 class GeradorGrade extends Component
 {
+    public string $curso_id             = '';
     public string $periodo_letivo_id    = '';
     public array  $turmasSelecionadas   = [];
     public bool   $previewGerado        = false;
@@ -23,6 +24,13 @@ class GeradorGrade extends Component
             $this->periodo_letivo_id = $ativo->id;
         }
     }
+
+    public function updatedCursoId(): void
+    {
+        $this->turmasSelecionadas = [];
+        $this->resetPreview();
+    }
+
 
     public function updatedPeriodoLetivoId(): void { $this->resetPreview(); }
 
@@ -287,10 +295,14 @@ class GeradorGrade extends Component
 
     public function render()
     {
-        $turmas          = Turma::with('curso')->where('ativo', true)->orderBy('nome')->get();
+        $cursos          = \App\Models\Curso::where('ativo', true)->orderBy('nome')->get();
+        $turmas          = Turma::with('curso')
+            ->where('ativo', true)
+            ->when($this->curso_id, fn($q) => $q->where('curso_id', $this->curso_id))
+            ->orderBy('nome')->get();
         $periodosLetivos = PeriodoLetivo::orderByDesc('ano')->orderByDesc('semestre')->get();
         $dias            = [1=>'SEG',2=>'TER',3=>'QUA',4=>'QUI',5=>'SEX'];
 
-        return view('livewire.gerador-grade', compact('turmas', 'periodosLetivos', 'dias'));
+        return view('livewire.gerador-grade', compact('turmas', 'periodosLetivos', 'dias', 'cursos'));
     }
 }

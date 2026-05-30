@@ -16,60 +16,72 @@
 
     {{-- Filtros --}}
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <div class="row g-3 align-items-end">
+        <div class="card-body py-3">
+            <div class="row g-2">
 
-                {{-- Período Letivo — único (dropdown) --}}
+                {{-- Coluna esquerda: Curso + Período empilhados --}}
                 <div class="col-md-3">
-                    <label class="form-label fw-medium">Período Letivo <span class="text-danger">*</span></label>
-                    <select wire:model.live="periodo_letivo_id" class="form-select">
-                        <option value="">Selecione...</option>
-                        @foreach($periodosLetivos as $p)
-                        <option value="{{ $p->id }}">
-                            {{ $p->nome }}{{ $p->ativo ? ' — Ativo' : '' }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <div class="mb-2">
+                        <label class="form-label fw-medium small mb-1">Curso</label>
+                        <select wire:model.live="curso_id" class="form-select form-select-sm">
+                            <option value="">Todos os cursos</option>
+                            @foreach($cursos as $c)
+                            <option value="{{ $c->id }}">{{ $c->sigla }} — {{ $c->nome }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label fw-medium small mb-1">Período Letivo <span class="text-danger">*</span></label>
+                        <select wire:model.live="periodo_letivo_id" class="form-select form-select-sm">
+                            <option value="">Selecione...</option>
+                            @foreach($periodosLetivos as $p)
+                            <option value="{{ $p->id }}">{{ $p->nome }}{{ $p->ativo ? ' ●' : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                {{-- Turmas — multi-seleção --}}
+                {{-- Coluna direita: Turmas horizontais --}}
                 <div class="col-md-7">
-                    <label class="form-label fw-medium">
-                        Turma(s) <span class="text-danger">*</span>
-                        <span class="text-muted small fw-normal">— selecione uma ou mais</span>
-                    </label>
-                    <div class="border rounded p-2" style="background:white">
-                        <div class="d-flex align-items-center gap-2 pb-1 mb-2 border-bottom">
-                            <button type="button" wire:click="toggleTodasTurmas"
-                                class="btn btn-sm {{ count($turmasSelecionadas) >= count($turmas) && count($turmas) > 0 ? 'btn-dark' : 'btn-outline-dark' }}">
-                                <i class="bi bi-check-all me-1"></i>
-                                {{ count($turmasSelecionadas) >= count($turmas) && count($turmas) > 0 ? 'Desmarcar todas' : 'Selecionar todas' }}
-                            </button>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-medium small mb-0">Turma(s) <span class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center gap-2">
                             @if(count($turmasSelecionadas) > 0)
-                            <span class="badge bg-primary">{{ count($turmasSelecionadas) }} selecionada(s)</span>
+                            <span class="badge bg-primary" style="font-size:10px">{{ count($turmasSelecionadas) }} selecionada(s)</span>
                             @endif
+                            <button type="button" wire:click="toggleTodasTurmas"
+                                class="btn btn-outline-secondary" style="font-size:10px;padding:1px 7px">
+                                {{ count($turmasSelecionadas) >= count($turmas) && count($turmas) > 0 ? 'Desmarcar' : 'Todas' }}
+                            </button>
                         </div>
-                        <div class="d-flex flex-wrap gap-2">
-                            @foreach($turmas as $t)
-                            <div class="form-check form-check-inline m-0">
-                                <input class="form-check-input" type="checkbox"
-                                    wire:model.live="turmasSelecionadas"
-                                    value="{{ $t->id }}" id="t_{{ $t->id }}">
-                                <label class="form-check-label" for="t_{{ $t->id }}">
-                                    <span class="badge {{ in_array($t->id, $turmasSelecionadas) ? 'bg-primary' : 'bg-light text-dark border' }}"
-                                          style="font-size:12px;cursor:pointer">
-                                        {{ $t->nome }}
-                                        <small class="opacity-75">{{ $t->curso->sigla }}</small>
-                                    </span>
-                                </label>
-                            </div>
-                            @endforeach
+                    </div>
+                    <div class="border rounded p-2 d-flex flex-wrap gap-1" style="min-height:70px;background:#fafafa">
+                        @forelse($turmas as $t)
+                        <div class="form-check m-0">
+                            <input class="form-check-input" type="checkbox"
+                                wire:model.live="turmasSelecionadas"
+                                value="{{ $t->id }}" id="t_{{ $t->id }}">
+                            <label class="form-check-label" for="t_{{ $t->id }}" style="cursor:pointer">
+                                <span class="badge {{ in_array($t->id, $turmasSelecionadas) ? 'bg-primary' : 'bg-light text-dark border' }}"
+                                      style="font-size:11px;white-space:nowrap">
+                                    {{ $t->nome }}
+                                    <span class="opacity-75">{{ $t->semestre }}º</span>
+                                </span>
+                            </label>
                         </div>
+                        @empty
+                        <span class="text-muted small align-self-center">
+                            <i class="bi bi-info-circle me-1"></i>Nenhuma turma encontrada
+                        </span>
+                        @endforelse
+                    </div>
+                    <div class="form-text mt-1">
+                        <i class="bi bi-check-square me-1"></i>Clique nos badges para selecionar as turmas
                     </div>
                 </div>
 
                 {{-- Botão Gerar --}}
-                <div class="col-md-2">
+                <div class="col-md-2 d-flex align-items-center">
                     <button wire:click="gerarPrevia"
                         wire:loading.attr="disabled"
                         class="btn btn-primary w-100"

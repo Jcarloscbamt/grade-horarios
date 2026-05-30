@@ -13,7 +13,8 @@ class RelatorioProfessores extends Component
     public string $search    = '';
     public string $curso_id  = '';
     public string $turma_id  = '';
-    public string $filtroAtivo = 'ativos';
+    public string $filtroAtivo   = 'ativos';
+    public bool   $showDuplicados = false;
 
     public function updatingSearch():   void { $this->resetPage(); }
     public function updatingCursoId():  void { $this->resetPage(); $this->turma_id = ''; }
@@ -94,6 +95,37 @@ class RelatorioProfessores extends Component
             ->orderBy('nome');
     }
 
+
+    // Retorna disciplinas+turma com mais de 1 professor vinculado
+    public function getDuplicados(): array
+    {
+        $duplicados = \App\Models\ProfessorDisciplina::with([
+                'disciplina.curso', 'turma', 'professor'
+            ])
+            ->when($this->curso_id, fn($q) =>
+                $q->whereHas('disciplina', fn($q2) =>
+                    $q2->where('curso_id', $this->curso_id))
+            )
+            ->when($this->turma_id, fn($q) =>
+                $q->where('turma_id', $this->turma_id)
+            )
+            ->get()
+            ->groupBy(fn($v) => $v->disciplina_id . '_' . $v->turma_id)
+            ->filter(fn($group) => $group->count() > 1)
+            ->map(fn($group) => [
+                'disciplina'  => $group->first()->disciplina->nome ?? '?',
+                'curso'       => $group->first()->disciplina->curso->sigla ?? '?',
+                'turma'       => $group->first()->turma->nome ?? '?',
+                'semestre'    => $group->first()->disciplina->semestre_grade ?? '?',
+                'professores' => $group->map(fn($v) => $v->professor->nome ?? '?')->values()->toArray(),
+                'count'       => $group->count(),
+            ])
+            ->values()
+            ->toArray();
+
+        return $duplicados;
+    }
+
     public function render()
     {
         $professores = $this->queryProfessores()->paginate(20);
@@ -103,6 +135,8 @@ class RelatorioProfessores extends Component
             : Turma::where('ativo', true)->orderBy('nome')->get();
         $dias        = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
-        return view('livewire.relatorio-professores', compact('professores', 'cursos', 'turmas', 'dias'));
+        $duplicados = $this->showDuplicados ? $this->getDuplicados() : [];
+
+        return view('livewire.relatorio-professores', compact('professores', 'cursos', 'turmas', 'dias', 'duplicados'));
     }
 }

@@ -9,6 +9,11 @@
             <button onclick="window.print()" class="btn btn-outline-secondary">
                 <i class="bi bi-printer me-1"></i>Imprimir / PDF
             </button>
+            <button wire:click="$toggle('showDuplicados')"
+                class="btn {{ $showDuplicados ? 'btn-danger' : 'btn-outline-danger' }}">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ $showDuplicados ? 'Fechar Duplicados' : 'Identificar Duplicados' }}
+            </button>
             <button wire:click="exportarCsv" class="btn btn-success">
                 <i class="bi bi-file-earmark-excel me-1"></i>Exportar CSV
             </button>
@@ -45,6 +50,63 @@
             </div>
         </div>
     </div>
+
+    {{-- Painel Duplicados --}}
+    @if($showDuplicados)
+    <div class="card border-0 shadow-sm mb-3 border-start border-danger border-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-danger mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                Disciplinas com mais de 1 professor vinculado
+                @if(count($duplicados) > 0)
+                <span class="badge bg-danger ms-1">{{ count($duplicados) }}</span>
+                @endif
+            </h6>
+
+            @if(count($duplicados) === 0)
+            <div class="alert alert-success mb-0">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                Nenhum duplicado encontrado! Todas as disciplinas têm apenas um professor.
+            </div>
+            @else
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="table-danger" style="position:sticky;top:0;z-index:10">
+                        <tr>
+                            <th>Disciplina</th>
+                            <th>Curso</th>
+                            <th>Turma</th>
+                            <th>Sem</th>
+                            <th>Professores vinculados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($duplicados as $dup)
+                        <tr>
+                            <td class="fw-medium">{{ $dup['disciplina'] }}</td>
+                            <td><span class="badge bg-secondary">{{ $dup['curso'] }}</span></td>
+                            <td>{{ $dup['turma'] }}</td>
+                            <td class="text-center">{{ $dup['semestre'] }}º</td>
+                            <td>
+                                @foreach($dup['professores'] as $prof)
+                                <span class="badge bg-danger me-1">
+                                    <i class="bi bi-person me-1"></i>{{ $prof }}
+                                </span>
+                                @endforeach
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2 text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                Acesse o cadastro de professores para remover o vínculo duplicado.
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
 
     {{-- Tabela --}}
     <div class="card border-0 shadow-sm">
