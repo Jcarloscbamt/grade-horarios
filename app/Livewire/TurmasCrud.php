@@ -17,7 +17,6 @@ class TurmasCrud extends Component
     public string $nome      = '';
     public string $semestre  = '';
     public string $ano       = '';
-    public string $periodo   = '';
 
     public bool $showModal  = false;
     public bool $showDelete = false;
@@ -34,7 +33,6 @@ class TurmasCrud extends Component
             'nome'     => 'required|max:50|unique:turmas,nome,' . ($this->turmaId ?? 'NULL'),
             'semestre' => 'required|integer|min:1|max:10',
             'ano'      => 'required|digits:4',
-            'periodo'  => 'required|in:1,2',
         ];
     }
 
@@ -44,7 +42,6 @@ class TurmasCrud extends Component
         'nome.unique'       => 'Este nome de turma já está cadastrado.',
         'semestre.required' => 'O semestre é obrigatório.',
         'ano.required'      => 'O ano é obrigatório.',
-        'periodo.required'  => 'O período é obrigatório.',
     ];
 
     public function create(): void
@@ -62,7 +59,6 @@ class TurmasCrud extends Component
         $this->nome     = $t->nome;
         $this->semestre = $t->semestre;
         $this->ano      = $t->ano;
-        $this->periodo  = $t->periodo;
         $this->modalTitle = 'Editar Turma';
         $this->ativo       = (bool) $t->ativo;
         $this->showModal  = true;
@@ -80,7 +76,6 @@ class TurmasCrud extends Component
                 'nome'     => $this->nome,
                 'semestre' => $this->semestre,
                 'ano'      => $this->ano,
-                'periodo'  => $this->periodo,
             ]
         );
         $this->showModal = false;
@@ -136,8 +131,12 @@ class TurmasCrud extends Component
 
     private function resetForm(): void
     {
-        $this->turmaId = null;
-        $this->curso_id = $this->nome = $this->semestre = $this->ano = $this->periodo = '';
+        $this->turmaId  = null;
+        $this->curso_id = '';
+        $this->nome     = '';
+        $this->semestre = '';
+        $this->ano      = '';
+        $this->ativo    = true;
         $this->resetValidation();
     }
 
@@ -155,13 +154,12 @@ class TurmasCrud extends Component
                     'nome'     => $q->where('nome', 'like', "%$s%"),
                     'curso'    => $q->whereHas('curso', fn($c) => $c->where('nome', 'like', "%$s%")->orWhere('sigla', 'like', "%$s%")),
                     'semestre' => $q->where('semestre', 'like', "%$s%"),
-                    'periodo'  => $q->where('periodo', 'like', "%$s%"),
                     default    => $q->where('nome', 'like', "%$s%")
                                     ->orWhereHas('curso', fn($c) => $c->where('nome', 'like', "%$s%")),
                 };
             })
             ->orderByDesc('ano')->orderBy('nome')
-            ->paginate(10);
+            ->paginate(20);
 
         $cursos = Curso::orderBy('nome')->get();
 

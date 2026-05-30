@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/relatorio-professores.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0"><i class="bi bi-person-lines-fill me-2" style="color:#E30613"></i>Relatório — Professores por Disciplina</h2>
+            <h4 class="fw-bold mb-0"><i class="bi bi-person-lines-fill me-2" style="color:#E30613"></i>Relatório — Professores por Disciplina</h2>
             <small class="text-muted">Consulte os vínculos de professores, disciplinas e turmas</small>
         </div>
         <div class="d-flex gap-2 d-print-none">
@@ -49,9 +49,9 @@
     {{-- Tabela --}}
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
                 <table class="table table-hover align-middle mb-0" style="font-size:13px">
-                    <thead class="table-light">
+                    <thead class="table-light" style="position:sticky;top:0;z-index:10">
                         <tr>
                             <th class="ps-3">Professor</th>
                             <th>Contato</th>

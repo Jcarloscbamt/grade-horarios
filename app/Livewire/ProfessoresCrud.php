@@ -177,13 +177,13 @@ class ProfessoresCrud extends Component
     public function getSel_disciplinaIdProperty(): int { return $this->sel_disciplina_id; }
 
     // ── Selecionar disciplina da lista ────────────────
-    public function selecionarDisciplina(int $id, string $nome, string $cursoNome, int $cursoId): void
+    public function selecionarDisciplina(int $id, string $nome, string $cursoNome, int $cursoId, int $turmaId, string $turmaNome): void
     {
         $this->sel_disciplina_id   = $id;
         $this->sel_disciplina_nome = $nome;
         $this->sel_curso_id        = $cursoId;
         $this->sel_curso_nome      = $cursoNome;
-        $this->sel_turma_id        = '';
+        $this->sel_turma_id        = (string) $turmaId;
         $this->buscaDisciplina     = '';
     }
 
@@ -302,6 +302,12 @@ class ProfessoresCrud extends Component
         }
         if (empty(trim($this->email))) {
             $this->addError('email', 'O e-mail é obrigatório.');
+            return;
+        }
+
+        // Disponibilidade geral obrigatória
+        if (empty($this->disponibilidade)) {
+            $this->addError('disponibilidade', 'Informe ao menos um dia de disponibilidade.');
             return;
         }
 
@@ -449,43 +455,42 @@ class ProfessoresCrud extends Component
                 };
             })
             ->orderBy('nome')
-            ->paginate(10);
+            ->paginate(20);
 
         $diasNomes = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
-        // Busca de disciplinas para vínculo
+        // Busca de disciplinas+turma combinadas
         $disciplinasDisponiveis = [];
         $mostrarLista = strlen($this->buscaDisciplina) >= 2;
         if ($mostrarLista) {
-            $disciplinasDisponiveis = Disciplina::with('curso')
+            // Busca disciplinas e combina com turmas do mesmo curso
+            $disciplinas = Disciplina::with('curso')
                 ->where('ativo', true)
                 ->where('nome', 'like', '%' . $this->buscaDisciplina . '%')
                 ->orderBy('nome')
-                ->get()
-                ->map(fn($d) => [
-                    'id'           => $d->id,
-                    'nome'         => $d->nome,
-                    'curso_nome'   => $d->curso->nome ?? '',
-                    'curso_id'     => $d->curso_id,
-                    'semestre_grade' => $d->semestre_grade,
-                ])
-                ->toArray();
+                ->get();
+
+            foreach ($disciplinas as $d) {
+                $turmas = Turma::where('curso_id', $d->curso_id)
+                    ->where('ativo', true)
+                    ->orderBy('nome')
+                    ->get();
+
+                foreach ($turmas as $t) {
+                    $disciplinasDisponiveis[] = [
+                        'id'         => $d->id,
+                        'nome'       => $d->nome,
+                        'turma_id'   => $t->id,
+                        'turma_nome' => $t->nome,
+                        'label'      => $d->nome . ' — ' . $t->nome,
+                        'curso_nome' => $d->curso->nome ?? '',
+                        'curso_id'   => $d->curso_id,
+                    ];
+                }
+            }
         }
 
-        // Turmas do vínculo (filtradas pelo curso selecionado)
-        $turmasDoVinculo = [];
-        if ($this->sel_curso_id) {
-            $turmasDoVinculo = Turma::where('curso_id', $this->sel_curso_id)
-                ->where('ativo', true)
-                ->orderBy('nome')
-                ->get()
-                ->map(fn($t) => [
-                    'id'       => $t->id,
-                    'nome'     => $t->nome,
-                    'semestre' => $t->semestre,
-                ])
-                ->toArray();
-        }
+        $turmasDoVinculo = []; // mantido por compatibilidade
 
         return view('livewire.professores-crud', compact(
             'professores', 'diasNomes',

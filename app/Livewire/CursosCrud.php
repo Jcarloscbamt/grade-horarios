@@ -216,7 +216,7 @@ class CursosCrud extends Component
                 };
             })
             ->orderBy('nome')
-            ->paginate(10);
+            ->paginate(20);
 
         return view('livewire.cursos-crud', compact('cursos'));
     }

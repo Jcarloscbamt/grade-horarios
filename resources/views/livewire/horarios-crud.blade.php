@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/horarios-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0">Horários</h2>
+            <h4 class="fw-bold mb-0">Horários</h2>
             <small class="text-muted">Blocos de horário das aulas</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -20,7 +20,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light" style="position:sticky;top:0;z-index:10">
                     <tr>
                         <th class="ps-3">Início</th>
                         <th>Fim</th>

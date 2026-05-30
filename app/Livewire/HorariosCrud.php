@@ -71,7 +71,12 @@ class HorariosCrud extends Component
         );
         $this->showModal = false;
         $this->resetForm();
-
+        // Log da ação
+        Log::registrar(
+            $isNovo ? 'criou' : 'editou',
+            'Horários',
+            ($isNovo ? 'Novo: ' : 'Editou: ') . $this->hora_inicio
+        );
         // Log da ação
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
@@ -119,7 +124,7 @@ class HorariosCrud extends Component
 
     public function render()
     {
-        $horarios = Horario::orderBy('hora_inicio')->paginate(10);
+        $horarios = Horario::orderBy('hora_inicio')->paginate(20);
         return view('livewire.horarios-crud', compact('horarios'));
     }
 }

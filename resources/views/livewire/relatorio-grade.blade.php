@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/relatorio-grade.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#E30613"></i>Relatório — Grade de Horários</h2>
+            <h4 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#E30613"></i>Relatório — Grade de Horários</h2>
             <small class="text-muted">Visualize e exporte a grade por turma e período letivo</small>
         </div>
         @if($totalAulas > 0)
@@ -139,9 +139,9 @@
 
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
                     <table class="table table-bordered align-middle mb-0" style="font-size:13px">
-                        <thead>
+                        <thead style="position:sticky;top:0;z-index:10">
                             <tr style="background:#1a1a1a;color:white">
                                 <th class="text-center py-3" style="width:110px">Horário</th>
                                 @foreach($dias as $num => $nome)

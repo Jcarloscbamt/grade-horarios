@@ -192,7 +192,7 @@ class DisciplinasCrud extends Component
                 };
             })
             ->orderBy('nome')
-            ->paginate(10);
+            ->paginate(20);
 
         $cursos = Curso::orderBy('nome')->get();
 

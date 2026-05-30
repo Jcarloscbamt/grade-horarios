@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/usuarios-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0">Usuários</h2>
+            <h4 class="fw-bold mb-0">Usuários</h2>
             <small class="text-muted">Gerenciamento de usuários e perfis de acesso</small>
         </div>
         <button wire:click="create" class="btn btn-primary">
@@ -32,7 +32,7 @@
     </div>
 
     {{-- Barra de pesquisa --}}
-    <div class="card mb-3 border-0 shadow-sm">
+    <div class="card mb-2 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0">
@@ -47,7 +47,7 @@
     </div>
 
     {{-- Tabela --}}
-    <div class="card mb-3 border-0 shadow-sm">
+    <div class="card mb-2 border-0 shadow-sm">
         <div class="card-body py-2">
             <select wire:model.live="filtroAtivo" class="form-select" style="max-width:220px">
                 <option value="todos">Todos os status</option>
@@ -60,7 +60,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light" style="position:sticky;top:0;z-index:10">
                     <tr>
                         <th class="ps-3">Usuário</th>
                         <th>E-mail</th>

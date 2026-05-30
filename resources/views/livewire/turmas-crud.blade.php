@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/turmas-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div><h2 class="fw-bold mb-0">Turmas</h2><small class="text-muted">Gerenciamento de turmas por curso</small></div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div><h4 class="fw-bold mb-0">Turmas</h4><small class="text-muted">Gerenciamento de turmas por curso</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Turma</button>
         @endhasanyrole
@@ -10,7 +10,7 @@
     @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
     @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
-    <div class="card mb-3 border-0 shadow-sm">
+    <div class="card mb-2 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="row g-2 align-items-center">
                 <div class="col-md-8">
@@ -20,7 +20,6 @@
                             <option value="nome">Turma</option>
                             <option value="curso">Curso</option>
                             <option value="semestre">Semestre</option>
-                            <option value="periodo">Período</option>
                         </select>
                         <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
@@ -40,12 +39,13 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light" style="position:sticky;top:0;z-index:10">
                     <tr>
                         <th class="ps-3">Turma</th>
                         <th>Curso</th>
-                        <th>Semestre Atual</th>
+                        <th>Semestre</th>
                         <th>Ano/Período</th>
                         <th class="text-center">Status</th>
                         <th class="text-center pe-3">Ações</th>
@@ -62,7 +62,7 @@
                             </span>
                         </td>
                         <td>{{ $turma->semestre }}º semestre</td>
-                        <td>{{ $turma->ano }}/{{ $turma->periodo }}</td>
+                        <td>{{ $turma->ano }}</td>
                         <td class="text-center">
                                 @hasanyrole('admin|coordenador')
                                 <button wire:click="toggleAtivo({{ $turma->id }})"
@@ -91,6 +91,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
         @if($turmas->hasPages())<div class="card-footer bg-white border-top-0">{{ $turmas->links() }}</div>@endif
     </div>
@@ -119,7 +120,7 @@
                             @error('nome') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-medium">Semestre Atual <span class="text-danger">*</span></label>
+                            <label class="form-label fw-medium">Semestre <span class="text-danger">*</span></label>
                             <input type="number" wire:model="semestre" class="form-control @error('semestre') is-invalid @enderror" placeholder="Ex: 6" min="1" max="10">
                             @error('semestre') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -127,24 +128,6 @@
                             <label class="form-label fw-medium">Ano <span class="text-danger">*</span></label>
                             <input type="number" wire:model="ano" class="form-control @error('ano') is-invalid @enderror" placeholder="Ex: 2026">
                             @error('ano') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-medium">Período <span class="text-danger">*</span></label>
-                            <select wire:model="periodo" class="form-select @error('periodo') is-invalid @enderror">
-                                <option value="">Selecione...</option>
-                                <option value="1">1º Período</option>
-                                <option value="2">2º Período</option>
-                            </select>
-                            @error('periodo') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch" wire:model="ativo" id="ativoTurma">
-                                <label class="form-check-label fw-medium" for="ativoTurma">
-                                    Turma <strong>{{ $ativo ? 'Ativa' : 'Inativa' }}</strong>
-                                    <span class="badge ms-1 {{ $ativo ? 'bg-success' : 'bg-secondary' }}">{{ $ativo ? 'Ativa' : 'Inativa' }}</span>
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>

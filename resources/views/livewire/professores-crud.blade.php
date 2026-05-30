@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/professores-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0">Professores</h2>
+            <h4 class="fw-bold mb-0">Professores</h2>
             <small class="text-muted">Gerenciamento de professores e suas disciplinas</small>
         </div>
         @hasanyrole('admin|coordenador')
@@ -13,7 +13,7 @@
     @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
     @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
-    <div class="card mb-3 border-0 shadow-sm">
+    <div class="card mb-2 border-0 shadow-sm">
         <div class="card-body py-2">
             <div class="row g-2 align-items-center">
                 <div class="col-md-8">
@@ -43,9 +43,9 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light" style="position:sticky;top:0;z-index:10">
                         <tr>
                             <th class="ps-3">Nome</th>
                             <th>E-mail</th>
@@ -185,6 +185,11 @@
                                 Marque os dias em que o professor pode lecionar.<br>
                                 <span class="text-warning fw-medium"><i class="bi bi-exclamation-triangle me-1"></i>Os dias das disciplinas serão validados com base nesta seleção.</span>
                             </p>
+                            @error('disponibilidade')
+                            <div class="alert alert-danger py-2 mb-2" style="font-size:13px">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                            </div>
+                            @enderror
                             <button type="button" wire:click="toggleTodosDisponibilidade"
                                 class="btn btn-sm w-100 mb-2 {{ count($disponibilidade) === 5 ? 'btn-dark' : 'btn-outline-dark' }}">
                                 <i class="bi bi-calendar-check me-1"></i>
@@ -231,12 +236,15 @@
                                         @if($buscaDisciplina)<button class="btn btn-outline-secondary btn-sm" wire:click="$set('buscaDisciplina', '')"><i class="bi bi-x"></i></button>@endif
                                     </div>
                                     @if($mostrarLista)
-                                    <div class="border rounded bg-white" style="max-height:180px;overflow-y:auto">
+                                    <div class="border rounded bg-white" style="max-height:220px;overflow-y:auto">
                                         @forelse($disciplinasDisponiveis as $disc)
                                         <button type="button"
-                                            wire:click="selecionarDisciplina({{ $disc['id'] }}, '{{ addslashes($disc['nome']) }}', '{{ addslashes($disc['curso_nome']) }}', {{ $disc['curso_id'] }})"
+                                            wire:click="selecionarDisciplina({{ $disc['id'] }}, '{{ addslashes($disc['nome']) }}', '{{ addslashes($disc['curso_nome']) }}', {{ $disc['curso_id'] }}, {{ $disc['turma_id'] }}, '{{ addslashes($disc['turma_nome']) }}')"
                                             class="list-group-item list-group-item-action border-0 py-2 px-3 text-start w-100">
-                                            <div class="fw-medium" style="font-size:13px">{{ $disc['nome'] }}</div>
+                                            <div class="fw-medium" style="font-size:13px">
+                                                {{ $disc['nome'] }}
+                                                <span class="badge bg-primary ms-1" style="font-size:10px">{{ $disc['turma_nome'] }}</span>
+                                            </div>
                                             <div class="text-muted" style="font-size:11px"><i class="bi bi-mortarboard me-1"></i>{{ $disc['curso_nome'] }}</div>
                                         </button>
                                         @empty
@@ -250,20 +258,17 @@
                                     @else
                                     {{-- Disciplina selecionada --}}
                                     <div class="rounded p-2 mb-2 border border-primary" style="background:#e8f0fe">
-                                        <div class="fw-semibold" style="font-size:13px;color:#1a56db"><i class="bi bi-check-circle-fill me-1"></i>{{ $sel_disciplina_nome }}</div>
+                                        <div class="fw-semibold" style="font-size:13px;color:#1a56db">
+                                            <i class="bi bi-check-circle-fill me-1"></i>{{ $sel_disciplina_nome }}
+                                            @if($sel_turma_id)
+                                            @php $t = \App\Models\Turma::find($sel_turma_id); @endphp
+                                            <span class="badge bg-primary ms-1" style="font-size:10px">{{ $t?->nome }}</span>
+                                            @endif
+                                        </div>
                                         <div class="text-muted" style="font-size:11px"><i class="bi bi-mortarboard me-1"></i>{{ $sel_curso_nome }}</div>
                                     </div>
 
-                                    {{-- Passo 2: Turma --}}
-                                    <div class="mb-2">
-                                        <label class="form-label fw-medium small mb-1"><span class="badge bg-primary me-1">2</span>Turma <span class="text-danger">*</span></label>
-                                        <select wire:model.live="sel_turma_id" class="form-select form-select-sm">
-                                            <option value="">Selecione a turma...</option>
-                                            @foreach($turmasDoVinculo as $turma)
-                                            <option value="{{ $turma['id'] }}">{{ $turma['nome'] }}{{ $turma['semestre'] ? ' — ' . $turma['semestre'] . 'º sem' : '' }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+
 
                                     {{-- Valida disponibilidade antes de permitir adicionar --}}
                                     @if($sel_turma_id && empty($disponibilidade))
@@ -275,7 +280,7 @@
                                     @endif
 
                                     {{-- Botão Adicionar / Salvar Edição --}}
-                                    @if($sel_disciplina_id && $sel_turma_id)
+                                    @if($sel_disciplina_id)
                                     <button type="button" wire:click="adicionarVinculo"
                                         class="btn btn-sm w-100 mt-1 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}">
                                         <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>

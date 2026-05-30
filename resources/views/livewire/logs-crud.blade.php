@@ -1,8 +1,8 @@
 {{-- resources/views/livewire/logs-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
-            <h2 class="fw-bold mb-0">Log de Alterações</h2>
+            <h4 class="fw-bold mb-0">Log de Alterações</h4>
             <small class="text-muted">Histórico de ações realizadas no sistema</small>
         </div>
     </div>
@@ -71,9 +71,9 @@
     {{-- Tabela --}}
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light" style="position:sticky;top:0;z-index:10">
                         <tr>
                             <th class="ps-3" style="width:160px">Data / Hora</th>
                             <th style="width:150px">Usuário</th>

@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/disciplinas-crud.blade.php --}}
 <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div><h2 class="fw-bold mb-0">Disciplinas</h2><small class="text-muted">Gerenciamento de disciplinas dos cursos</small></div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div><h4 class="fw-bold mb-0">Disciplinas</h4><small class="text-muted">Gerenciamento de disciplinas dos cursos</small></div>
         @hasanyrole('admin|coordenador')
         <button wire:click="create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nova Disciplina</button>
         @endhasanyrole
@@ -10,8 +10,8 @@
     @if(session()->has('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
     @if(session()->has('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
 
-    <div class="card mb-3 border-0 shadow-sm">
-        <div class="card-body py-2">
+    <div class="card mb-2 border-0 shadow-sm">
+        <div class="card-body py-2 px-3">
             <div class="row g-2 align-items-center">
                 <div class="col-md-8">
                     <div class="input-group">
@@ -38,9 +38,9 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height:calc(100vh - 220px);overflow-y:auto">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light" style="position:sticky;top:0;z-index:10">
                         <tr>
                             <th class="ps-3">Nome</th>
                             <th>Curso</th>

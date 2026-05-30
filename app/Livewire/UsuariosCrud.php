@@ -177,7 +177,7 @@ class UsuariosCrud extends Component
                   ->orWhere('email', 'like', "%{$busca}%")
             )
             ->orderBy('name')
-            ->paginate(10);
+            ->paginate(20);
 
         $roles = Role::orderBy('name')->get();
 

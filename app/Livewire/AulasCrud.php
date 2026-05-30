@@ -295,7 +295,7 @@ class AulasCrud extends Component
                 };
             })
             ->orderBy('dia_semana')
-            ->paginate(15);
+            ->paginate(20);
 
         $turmas          = Turma::where('ativo', true)->orderBy('nome')->get();
         $disciplinas     = Disciplina::where('ativo', true)->orderBy('nome')->get();

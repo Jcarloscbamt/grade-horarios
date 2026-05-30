@@ -25,7 +25,7 @@ class SalasCrud extends Component
     public string $filtro  = 'todos';
     public string $modalTitle = '';
 
-    public array $tipos = ['Sala de Aula', 'Laboratório', 'Auditório', 'Sala de Reunião'];
+    public array $tipos = ['Sala de Aula', 'Laboratório'];
 
     protected function rules(): array
     {
@@ -155,7 +155,7 @@ class SalasCrud extends Component
                 };
             })
             ->orderBy('nome')
-            ->paginate(10);
+            ->paginate(20);
 
         return view('livewire.salas-crud', compact('salas'));
     }
