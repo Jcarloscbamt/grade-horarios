@@ -19,6 +19,8 @@ class DisciplinasCrud extends Component
     public string $semestre_grade    = '';
     public string $tipo_sala          = '';
     public string $bloco_preferencial = '';
+    public string $tipo_alocacao      = 'qualquer'; // qualquer | bloco | sala
+    public string $sala_id_especifica = '';
 
     public bool $showModal  = false;
     public bool $showDelete = false;
@@ -73,6 +75,8 @@ class DisciplinasCrud extends Component
         $this->ativo              = (bool) $d->ativo;
         $this->tipo_sala          = $d->tipo_sala ?? '';
         $this->bloco_preferencial = $d->bloco_preferencial ?? '';
+        $this->sala_id_especifica = $d->sala_id ?? '';
+        $this->tipo_alocacao      = $d->sala_id ? 'sala' : ($d->bloco_preferencial ? 'bloco' : 'qualquer');
         $this->showModal      = true;
     }
 
@@ -101,7 +105,8 @@ class DisciplinasCrud extends Component
                 'carga_horaria'      => $this->carga_horaria,
                 'semestre_grade'     => $this->semestre_grade,
                 'tipo_sala'          => $this->tipo_sala ?: null,
-                'bloco_preferencial' => ($this->tipo_sala === 'Online') ? null : ($this->bloco_preferencial ?: null),
+                'bloco_preferencial' => ($this->tipo_sala === 'Online' || $this->tipo_alocacao !== 'bloco') ? null : ($this->bloco_preferencial ?: null),
+                'sala_id'            => ($this->tipo_sala === 'Online' || $this->tipo_alocacao !== 'sala') ? null : ($this->sala_id_especifica ?: null),
                 'ativo'              => $this->ativo,
             ]
         );
@@ -206,6 +211,7 @@ class DisciplinasCrud extends Component
             $blocos = ['A', 'B', 'C', 'D'];
         }
 
-        return view('livewire.disciplinas-crud', compact('disciplinas', 'cursos', 'tiposSala', 'blocos'));
+        $salas = \App\Models\Sala::where('ativo', true)->orderBy('nome')->get();
+        return view('livewire.disciplinas-crud', compact('salas', 'disciplinas', 'cursos', 'tiposSala', 'blocos'));
     }
 }

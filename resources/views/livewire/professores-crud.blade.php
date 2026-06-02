@@ -191,23 +191,6 @@
                             </div>
                             @enderror
 
-                            {{-- Indicador dias vs turmas --}}
-                            @php
-                                $turmasCount = collect($vinculos)->pluck('turma_id')->unique()->count();
-                                $diasCount   = count($disponibilidade);
-                                $ok          = $diasCount >= $turmasCount;
-                            @endphp
-                            @if($turmasCount > 0)
-                            <div class="mt-2 p-2 rounded border {{ $ok ? 'border-success bg-success' : 'border-warning bg-warning' }} bg-opacity-10" style="font-size:12px">
-                                @if($ok)
-                                <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                <strong class="text-success">OK:</strong> {{ $diasCount }} dia(s) disponível(is) para {{ $turmasCount }} turma(s) ✅
-                                @else
-                                <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-                                <strong class="text-warning">Atenção:</strong> {{ $diasCount }} dia(s) para {{ $turmasCount }} turma(s) — adicione mais {{ $turmasCount - $diasCount }} dia(s) ⚠️
-                                @endif
-                            </div>
-                            @endif
                             <button type="button" wire:click="toggleTodosDisponibilidade"
                                 class="btn btn-sm w-100 mb-2 {{ count($disponibilidade) === 5 ? 'btn-dark' : 'btn-outline-dark' }}">
                                 <i class="bi bi-calendar-check me-1"></i>

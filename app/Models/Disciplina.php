@@ -13,6 +13,7 @@ class Disciplina extends Model
         'semestre_grade',
         'tipo_sala',
         'bloco_preferencial',
+        'sala_id',
         'ativo',
     ];
 

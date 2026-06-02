@@ -169,35 +169,68 @@
                             @error('tipo_sala')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Bloco Preferencial — só aparece se NÃO for Online --}}
+                        {{-- Alocação de Sala — só para não Online --}}
                         @if($tipo_sala && $tipo_sala !== 'Online')
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Alocação de Sala</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" wire:model.live="tipo_alocacao" value="qualquer" id="aloc_qualquer">
+                                    <label class="form-check-label" for="aloc_qualquer">Qualquer sala do tipo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" wire:model.live="tipo_alocacao" value="bloco" id="aloc_bloco">
+                                    <label class="form-check-label" for="aloc_bloco">Bloco preferencial</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" wire:model.live="tipo_alocacao" value="sala" id="aloc_sala">
+                                    <label class="form-check-label" for="aloc_sala">Sala específica</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($tipo_alocacao === 'bloco')
                         <div class="col-md-6">
-                            <label class="form-label fw-medium">Bloco Preferencial</label>
+                            <label class="form-label fw-medium small mb-1">Bloco Preferencial</label>
                             <select wire:model="bloco_preferencial" class="form-select">
-                                <option value="">Qualquer bloco</option>
+                                <option value="">Selecione o bloco...</option>
                                 @foreach($blocos as $bloco)<option value="{{ $bloco }}">Bloco {{ $bloco }}</option>@endforeach
+                            </select>
+                        </div>
+                        @elseif($tipo_alocacao === 'sala')
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium small mb-1">Sala Específica</label>
+                            <select wire:model="sala_id_especifica" class="form-select">
+                                <option value="">Selecione a sala...</option>
+                                @foreach($salas->where('tipo', $tipo_sala) as $sala)
+                                <option value="{{ $sala->id }}">{{ $sala->nome }} — Bloco {{ $sala->bloco }}</option>
+                                @endforeach
                             </select>
                         </div>
                         @endif
 
-                        {{-- Preview da alocação --}}
-                        @if($tipo_sala)
                         <div class="col-12">
-                            @if($tipo_sala === 'Online')
-                            <div class="p-2 rounded border bg-light d-inline-flex align-items-center gap-2" style="border-color:#0d6efd !important">
-                                <i class="bi bi-wifi text-primary"></i>
-                                <span class="fw-semibold text-primary" style="font-size:13px">
-                                    Aula Online — sem sala física. Alunos assistem de casa.
-                                </span>
-                            </div>
-                            @else
                             <div class="p-2 rounded border bg-light d-inline-flex align-items-center gap-2">
                                 <i class="bi bi-building text-primary"></i>
-                                <span class="fw-semibold" style="font-size:13px">
-                                    Sala alocada como: <span class="text-primary">{{ $tipo_sala }}{{ $bloco_preferencial ? ' — Bloco ' . $bloco_preferencial : ' (qualquer bloco)' }}</span>
+                                <span style="font-size:13px">
+                                    @if($tipo_alocacao === 'sala' && $sala_id_especifica)
+                                        Sala fixa: <strong class="text-primary">{{ $salas->firstWhere('id', $sala_id_especifica)?->nome }}</strong>
+                                    @elseif($tipo_alocacao === 'bloco' && $bloco_preferencial)
+                                        Bloco preferencial: <strong class="text-primary">{{ $bloco_preferencial }}</strong>
+                                    @else
+                                        <span class="text-muted">Qualquer sala do tipo {{ $tipo_sala }}</span>
+                                    @endif
                                 </span>
                             </div>
-                            @endif
+                        </div>
+                        @endif
+
+                        @if($tipo_sala === 'Online')
+                        <div class="col-12">
+                            <div class="p-2 rounded border bg-light d-inline-flex align-items-center gap-2" style="border-color:#0d6efd !important">
+                                <i class="bi bi-wifi text-primary"></i>
+                                <span class="fw-semibold text-primary" style="font-size:13px">Aula Online — sem sala física.</span>
+                            </div>
                         </div>
                         @endif
                         <div class="col-12">

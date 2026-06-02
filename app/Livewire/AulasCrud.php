@@ -280,7 +280,8 @@ class AulasCrud extends Component
             }
         }
 
-        $aulas = Aula::with(['turma','disciplina','professor','sala','horario','periodoLetivo'])
+        // Agrupa por turma+disciplina+dia — mostra 1 linha por slot de aula (não por horário)
+        $aulas = Aula::with(['turma','disciplina','professor','sala','periodoLetivo'])
             ->when($this->search, function($q) use ($diaNumero) {
                 $s = $this->search;
                 match($this->filtro) {
@@ -294,6 +295,11 @@ class AulasCrud extends Component
                                       ->orWhereHas('professor',fn($q)=>$q->where('nome','like',"%$s%")),
                 };
             })
+            ->select('turma_id','disciplina_id','professor_id','sala_id','dia_semana','periodo_letivo_id','modalidade',
+                     \DB::raw('MIN(id) as id'),
+                     \DB::raw('MIN(horario_id) as horario_id_min'),
+                     \DB::raw('MAX(horario_id) as horario_id_max'))
+            ->groupBy('turma_id','disciplina_id','professor_id','sala_id','dia_semana','periodo_letivo_id','modalidade')
             ->orderBy('dia_semana')
             ->paginate(20);
 

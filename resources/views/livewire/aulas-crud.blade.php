@@ -84,7 +84,18 @@
                             <td style="text-transform:uppercase">{{ $aula->turma->nome }}</td>
                             <td>{{ Str::limit($aula->disciplina->nome, 30) }}</td>
                             <td style="text-transform:uppercase">{{ $aula->professor->nome }}</td>
-                            <td>{{ substr($aula->horario->hora_inicio,0,5) }} – {{ substr($aula->horario->hora_fim,0,5) }}</td>
+                            <td>
+                                @php
+                                    // Busca primeiro e último horário do dia para esta aula
+                                    $primeiroH = \App\Models\Horario::where('tipo','!=','intervalo')->orderBy('hora_inicio')->first();
+                                    $ultimoH   = \App\Models\Horario::where('tipo','!=','intervalo')->orderByDesc('hora_fim')->first();
+                                @endphp
+                                <span style="font-family:monospace;font-size:12px">
+                                    {{ $primeiroH ? substr($primeiroH->hora_inicio,0,5) : '--:--' }}
+                                    –
+                                    {{ $ultimoH ? substr($ultimoH->hora_fim,0,5) : '--:--' }}
+                                </span>
+                            </td>
                             <td style="text-transform:uppercase">{{ $aula->sala?->nome ?? '—' }}</td>
                             <td style="text-transform:uppercase">{{ $aula->modalidade }}</td>
                             <td style="text-transform:uppercase">{{ $aula->periodoLetivo->nome }}</td>

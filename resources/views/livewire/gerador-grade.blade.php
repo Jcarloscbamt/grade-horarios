@@ -108,7 +108,71 @@
         </div>
     </div>
 
+    {{-- Aviso turmas já geradas --}}
+    @if(count($turmasJaGeradas) > 0)
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <div>
+            <strong>Atenção:</strong> As seguintes turmas já têm grade gerada para este período:
+            <strong>{{ implode(', ', $turmasJaGeradas) }}</strong>
+            <br><small>Para regerar, exclua as aulas existentes na tela <a href="{{ route('aulas') }}">Aulas</a> primeiro.</small>
+        </div>
+    </div>
+    @endif
+
+    {{-- Seleção de professor quando há múltiplos --}}
+    @if($aguardandoSelecao)
+    <div class="card border-0 shadow-sm mb-4 border-start border-primary border-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-primary mb-3">
+                <i class="bi bi-people me-1"></i>Selecione o professor para cada disciplina com múltiplos vínculos
+            </h6>
+            <div class="d-flex flex-column gap-3">
+                @foreach($pendentesSelecao as $pend)
+                @php $key = $pend['disciplina_id'].'_'.$pend['turma_id']; @endphp
+                <div class="border rounded p-3" style="background:#f8f9fa">
+                    <div class="fw-medium mb-2" style="font-size:13px">
+                        <i class="bi bi-book me-1 text-primary"></i>
+                        {{ $pend['disciplina_nome'] }}
+                        <span class="badge bg-secondary ms-1">{{ $pend['turma_nome'] }}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($pend['professores'] as $prof)
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio"
+                                wire:model="escolhasProfessores.{{ $key }}"
+                                value="{{ $prof['id'] }}"
+                                id="prof_{{ $key }}_{{ $prof['id'] }}">
+                            <label class="form-check-label badge {{ isset($escolhasProfessores[$key]) && $escolhasProfessores[$key] == $prof['id'] ? 'bg-primary' : 'bg-light text-dark border' }}"
+                                for="prof_{{ $key }}_{{ $prof['id'] }}"
+                                style="font-size:12px;cursor:pointer;font-weight:500">
+                                <i class="bi bi-person me-1"></i>{{ $prof['nome'] }}
+                            </label>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button wire:click="cancelarSelecao" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x me-1"></i>Cancelar
+                </button>
+                <button wire:click="confirmarSelecao" class="btn btn-primary btn-sm">
+                    <i class="bi bi-check2-circle me-1"></i>Confirmar e Gerar
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     @if($previewGerado)
+    {{-- Indicador da estratégia usada --}}
+    @if($estrategiaUsada)
+    <div class="alert {{ str_contains($estrategiaUsada, '✅') ? 'alert-success' : 'alert-info' }} py-2 mb-3" style="font-size:12px">
+        <i class="bi bi-cpu me-1"></i><strong>Varredura automática:</strong> {{ $estrategiaUsada }}
+    </div>
+    @endif
 
     {{-- Conflitos --}}
     @if(count($conflitos) > 0)
@@ -124,6 +188,22 @@
                         <i class="bi bi-x-circle-fill text-danger mt-1 flex-shrink-0"></i>
                         <span class="fw-medium">{{ $c['mensagem'] }}</span>
                     </div>
+                    {{-- Diagnóstico por dia --}}
+                    @if(!empty($c['diagnostico']))
+                    <div class="ms-4 mb-2">
+                        <div class="text-muted fw-medium mb-1" style="font-size:12px">
+                            <i class="bi bi-search me-1"></i>Por que cada dia falhou:
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach($c['diagnostico'] as $diag)
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger" style="font-size:11px;font-weight:400">
+                                {{ $diag }}
+                            </span>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+
                     @if(!empty($c['dias_livres']))
                     <div class="ms-4">
                         <div class="text-success fw-medium mb-1" style="font-size:12px">
@@ -144,12 +224,13 @@
                         </div>
                         <div class="text-muted mt-1" style="font-size:11px">
                             <i class="bi bi-info-circle me-1"></i>
-                            Ao aceitar, este dia será adicionado à disponibilidade do professor e a grade será regerada automaticamente.
+                            Ao aceitar, este dia será adicionado à disponibilidade do professor e a grade será regerada.
                         </div>
                     </div>
                     @elseif(isset($c['professor_id']))
-                    <div class="ms-4 text-danger" style="font-size:12px">
-                        <i class="bi bi-calendar-x me-1"></i>Nenhum dia livre. Ajuste manualmente o cadastro do professor.
+                    <div class="ms-4 text-muted" style="font-size:12px">
+                        <i class="bi bi-calendar-x me-1"></i>
+                        Nenhum dia livre fora da disponibilidade — revise a distribuição dos professores ou adicione mais dias ao professor.
                     </div>
                     @endif
                     @if(isset($c['professor_id']))

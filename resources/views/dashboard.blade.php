@@ -20,7 +20,7 @@
                 ['route' => 'professores', 'icon' => 'bi-person-badge-fill',   'cor' => '#E30613', 'bg' => '#fde8e8', 'label' => 'Professores',      'count' => \App\Models\Professor::count()],
                 ['route' => 'disciplinas', 'icon' => 'bi-book-fill',           'cor' => '#1a1a1a', 'bg' => '#ebebeb', 'label' => 'Disciplinas',      'count' => \App\Models\Disciplina::count()],
                 ['route' => 'salas',       'icon' => 'bi-door-open-fill',      'cor' => '#E30613', 'bg' => '#fde8e8', 'label' => 'Salas',            'count' => \App\Models\Sala::count()],
-                ['route' => 'aulas',       'icon' => 'bi-calendar-week-fill',  'cor' => '#1a1a1a', 'bg' => '#ebebeb', 'label' => 'Aulas cadastradas','count' => \App\Models\Aula::count()],
+                ['route' => 'aulas',       'icon' => 'bi-calendar-week-fill',  'cor' => '#1a1a1a', 'bg' => '#ebebeb', 'label' => 'Aulas na Grade','count' => \Illuminate\Support\Facades\DB::select('SELECT COUNT(*) as total FROM (SELECT DISTINCT turma_id, disciplina_id, dia_semana, periodo_letivo_id FROM aulas) t')[0]->total],
                 ['route' => 'horarios',    'icon' => 'bi-clock-fill',          'cor' => '#E30613', 'bg' => '#fde8e8', 'label' => 'Horários',         'count' => \App\Models\Horario::count()],
                 ['route' => 'periodos',    'icon' => 'bi-calendar3',           'cor' => '#1a1a1a', 'bg' => '#ebebeb', 'label' => 'Períodos Letivos', 'count' => \App\Models\PeriodoLetivo::count()],
             ];
