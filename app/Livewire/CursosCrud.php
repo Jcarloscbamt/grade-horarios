@@ -81,6 +81,13 @@ class CursosCrud extends Component
         return '(' . substr($tel,0,2) . ') ' . substr($tel,2,5) . '-' . substr($tel,7,4);
     }
 
+    public function updatedNivel(): void
+    {
+        if ($this->nivel) {
+            $this->resetErrorBag('nivel');
+        }
+    }
+
     public function updatedTelefoneCoord(string $value): void
     {
         $this->telefone_coord = $this->formatarTelefone($value);
@@ -124,7 +131,7 @@ class CursosCrud extends Component
                 'coordenador'    => $this->coordenador,
                 'email_coord'    => $this->email_coord,
                 'telefone_coord' => $this->telefone_coord ?: null,
-                'total_semestres' => 'required|integer|min:1|max:10',
+                'total_semestres' => $this->total_semestres,
             'cor_grade'      => $this->cor_grade,
             ]
         );

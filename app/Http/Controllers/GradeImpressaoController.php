@@ -53,31 +53,17 @@ class GradeImpressaoController extends Controller
             return null;
         });
 
-        // ── QR Code em base64 — CACHEADO por telefone ──
-        $qrBase64 = null;
-        $tel = $turma->curso?->telefone_coord
+        // QR Code agora é gerado no NAVEGADOR (JavaScript) — não trava o PHP.
+        // Passamos apenas o link do WhatsApp; o JS monta o QR instantaneamente.
+        $telefoneLimpo = $turma->curso?->telefone_coord
             ? preg_replace('/\D/', '', $turma->curso->telefone_coord)
             : null;
-
-        if ($tel && class_exists(\BaconQrCode\Writer::class)) {
-            $qrBase64 = Cache::rememberForever('qrcode_impressao_' . md5($tel), function () use ($tel) {
-                try {
-                    $link     = "https://wa.me/55{$tel}";
-                    $renderer = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
-                    $style    = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(90);
-                    $image    = new \BaconQrCode\Renderer\ImageRenderer($style, $renderer);
-                    $writer   = new \BaconQrCode\Writer($image);
-                    return 'data:image/svg+xml;base64,' . base64_encode($writer->writeString($link));
-                } catch (\Exception $e) {
-                    return null;
-                }
-            });
-        }
+        $whatsappLink = $telefoneLimpo ? "https://wa.me/55{$telefoneLimpo}" : '';
 
         $view = $modo === 'pb' ? 'grade-impressao-pb' : 'grade-impressao';
 
         return view($view, compact(
-            'turma', 'periodo', 'horarios', 'grade', 'dias', 'logoBase64', 'qrBase64'
+            'turma', 'periodo', 'horarios', 'grade', 'dias', 'logoBase64', 'whatsappLink'
         ));
     }
 }

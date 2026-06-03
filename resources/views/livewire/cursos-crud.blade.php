@@ -142,7 +142,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Nível <span class="text-danger">*</span></label>
-                            <select wire:model="nivel" class="form-select @error('nivel') is-invalid @enderror">
+                            <select wire:model.live="nivel" class="form-select @error('nivel') is-invalid @enderror">
                                 <option value="">Selecione...</option>
                                 @foreach($niveis as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
                             </select>

@@ -291,11 +291,11 @@
         @endif
     </div>
 
-    {{-- QR Code P&B --}}
-    @if($qrBase64)
+    {{-- QR Code P&B — gerado no navegador --}}
+    @if($whatsappLink)
     <div class="info-bloco-qr">
-        <img src="{{ $qrBase64 }}" alt="QR WhatsApp" width="86" height="86"
-             style="display:block;border:2px solid #000;border-radius:3px;filter:grayscale(100%)">
+        <div id="qrcode" data-link="{{ $whatsappLink }}"
+             style="width:86px;height:86px;border:2px solid #000;border-radius:3px;line-height:0;background:#fff"></div>
         <div style="font-size:9px;font-weight:bold;margin-top:4px;text-align:center;color:#000;line-height:1.4">
             &#9742; Fale com a<br>Coordenação
         </div>
@@ -306,5 +306,21 @@
 @endif
 @endif
 
+<script src="{{ asset('js/qrcode.min.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var el = document.getElementById('qrcode');
+        if (el && el.dataset.link && typeof qrcode !== 'undefined') {
+            try {
+                var qr = qrcode(0, 'M');
+                qr.addData(el.dataset.link);
+                qr.make();
+                el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0 });
+                var svg = el.querySelector('svg');
+                if (svg) { svg.style.width = '80px'; svg.style.height = '80px'; }
+            } catch (e) { console.warn('QR:', e); }
+        }
+    });
+</script>
 </body>
 </html>
