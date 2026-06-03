@@ -357,7 +357,9 @@
 @endif
 
 <script>
-    window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 500); });
+    // NÃO auto-imprime — a página carrega rápido e o usuário clica em Imprimir quando quiser.
+    // (o preview de impressão do Chrome pode ser lento; ao separar visualização de impressão,
+    //  a grade aparece instantaneamente e o usuário decide a hora de imprimir)
     window.addEventListener('beforeprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='none'; });
     window.addEventListener('afterprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='block'; });
 </script>

@@ -49,16 +49,21 @@ class GradeHorarios extends Component
 
     private function gerarQrCodeSvg(string $texto): string
     {
-        try {
-            if (!class_exists(\BaconQrCode\Writer::class)) return '';
-            $renderer = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
-            $style    = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(90);
-            $image    = new \BaconQrCode\Renderer\ImageRenderer($style, $renderer);
-            $writer   = new \BaconQrCode\Writer($image);
-            return $writer->writeString($texto);
-        } catch (\Exception $e) {
-            return '';
-        }
+        // Cache persistente (Laravel) — QR só é gerado 1x por URL
+        $chave = 'qrcode_grade_' . md5($texto);
+
+        return \Illuminate\Support\Facades\Cache::rememberForever($chave, function () use ($texto) {
+            try {
+                if (!class_exists(\BaconQrCode\Writer::class)) return '';
+                $renderer = new \BaconQrCode\Renderer\Image\SvgImageBackEnd();
+                $style    = new \BaconQrCode\Renderer\RendererStyle\RendererStyle(90);
+                $image    = new \BaconQrCode\Renderer\ImageRenderer($style, $renderer);
+                $writer   = new \BaconQrCode\Writer($image);
+                return $writer->writeString($texto);
+            } catch (\Exception $e) {
+                return '';
+            }
+        });
     }
 
     public function render()
@@ -82,7 +87,12 @@ class GradeHorarios extends Component
         if (!empty($this->turmasSelecionadas) && $this->periodo_letivo_id) {
             $periodoObj = PeriodoLetivo::find($this->periodo_letivo_id);
 
-            $aulas = Aula::with(['disciplina', 'professor', 'sala', 'horario'])
+            $aulas = Aula::with([
+                    'disciplina:id,nome,tipo_sala',
+                    'professor:id,nome',
+                    'sala:id,nome,bloco',
+                    'horario:id,hora_inicio,hora_fim'
+                ])
                 ->whereIn('turma_id', $this->turmasSelecionadas)
                 ->where('periodo_letivo_id', $this->periodo_letivo_id)
                 ->get();
