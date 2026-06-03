@@ -194,12 +194,23 @@
                         <div class="text-muted fw-medium mb-1" style="font-size:12px">
                             <i class="bi bi-search me-1"></i>Por que cada dia falhou:
                         </div>
-                        <div class="d-flex flex-wrap gap-1">
+                        <div class="d-flex flex-column gap-1">
                             @foreach($c['diagnostico'] as $diag)
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger" style="font-size:11px;font-weight:400">
-                                {{ $diag }}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-inline-block text-start" style="font-size:11px;font-weight:400;max-width:fit-content">
+                                <i class="bi bi-x-circle me-1"></i>{{ $diag }}
                             </span>
                             @endforeach
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Sugestão de troca (swap) --}}
+                    @if(!empty($c['sugestao_troca']))
+                    <div class="ms-4 mb-2">
+                        <div class="alert alert-info py-2 mb-0" style="font-size:12px">
+                            <i class="bi bi-arrow-left-right me-1"></i>
+                            <strong>Sugestão de reorganização:</strong><br>
+                            {{ $c['sugestao_troca'] }}
                         </div>
                     </div>
                     @endif
