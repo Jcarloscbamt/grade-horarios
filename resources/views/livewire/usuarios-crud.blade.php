@@ -224,6 +224,24 @@
                             @endif
                         </div>
 
+                        {{-- Status Ativo/Inativo — só ao editar --}}
+                        @if($usuarioId)
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="ativoSwitch" wire:model.live="ativo" style="cursor:pointer">
+                                <label class="form-check-label" for="ativoSwitch">
+                                    @if($ativo)
+                                    <span class="text-success fw-medium"><i class="bi bi-check-circle-fill me-1"></i>Ativo — pode acessar o sistema</span>
+                                    @else
+                                    <span class="text-danger fw-medium"><i class="bi bi-x-circle-fill me-1"></i>Inativo — bloqueado do sistema</span>
+                                    @endif
+                                </label>
+                            </div>
+                        </div>
+                        @endif
+
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">

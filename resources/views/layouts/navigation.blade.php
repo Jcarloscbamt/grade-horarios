@@ -329,6 +329,10 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
            class="sidebar-link {{ request()->routeIs('usuarios') ? 'active' : '' }}">
             <i class="bi bi-people-fill"></i><span>Usuários</span>
         </a>
+        <a href="{{ route('envio-emails') }}" data-tooltip="Envio de E-mails"
+       class="sidebar-link {{ request()->routeIs('envio-emails') ? 'active' : '' }}">
+        <i class="bi bi-envelope-paper"></i><span>Envio de E-mails</span>
+    </a>
     </div>
     @endhasrole
 

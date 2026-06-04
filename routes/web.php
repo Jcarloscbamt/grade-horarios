@@ -20,7 +20,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Troca de senha obrigatória
-Route::middleware(['auth'])->group(function () {
+    Route::middleware(['auth'])->group(function () {
     Route::get('/trocar-senha',  [TrocarSenhaController::class, 'show'])
         ->name('password.change');
     Route::post('/trocar-senha', [TrocarSenhaController::class, 'update'])
@@ -56,7 +56,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Somente Admin
     Route::get('/usuarios', \App\Livewire\UsuariosCrud::class)->middleware('role:admin')->name('usuarios');
     Route::get('/logs',     \App\Livewire\LogsCrud::class)->middleware('role:admin')->name('logs');
-
+    Route::get('/envio-emails', \App\Livewire\EnvioEmails::class)->middleware('role:admin')->name('envio-emails');
+    
     Route::get('/ajuda', \App\Livewire\Ajuda::class)->name('ajuda');
 
 });

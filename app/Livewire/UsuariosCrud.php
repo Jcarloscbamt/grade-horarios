@@ -18,6 +18,7 @@ class UsuariosCrud extends Component
     public string $email       = '';
     public string $password    = '';
     public string $perfil      = '';   // renomeado de 'role' para evitar conflito com @foreach no blade
+    public bool   $ativo       = true;
 
     public bool   $showModal   = false;
     public bool   $showDelete  = false;
@@ -49,6 +50,7 @@ class UsuariosCrud extends Component
     public function create(): void
     {
         $this->limparFormulario();
+        $this->ativo = true;
         $this->modalTitle = 'Novo Usuário';
         $this->showModal  = true;
     }
@@ -61,6 +63,7 @@ class UsuariosCrud extends Component
         $this->email      = $user->email;
         $this->password   = '';
         $this->perfil     = $user->getRoleNames()->first() ?? '';
+        $this->ativo      = (bool) ($user->ativo ?? true);
         $this->modalTitle = 'Editar Usuário';
         $this->showModal  = true;
     }
@@ -75,6 +78,7 @@ class UsuariosCrud extends Component
         $data = [
             'name'  => $this->name,
             'email' => $this->email,
+            'ativo' => $this->ativo,
         ];
 
         if ($this->password) {
@@ -160,6 +164,7 @@ class UsuariosCrud extends Component
         $this->email     = '';
         $this->password  = '';
         $this->perfil    = '';
+        $this->ativo     = true;
         $this->resetValidation();
     }
 
