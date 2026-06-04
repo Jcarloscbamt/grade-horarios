@@ -2,18 +2,51 @@
 // app/Livewire/EnvioEmails.php
 namespace App\Livewire;
 
-use App\Models\{Professor, PeriodoLetivo};
+use App\Models\{Professor, PeriodoLetivo, ConfigEmail};
 use App\Services\EnviarAvisoAulas;
 use App\Models\Log;
 use Livewire\Component;
 
 class EnvioEmails extends Component
 {
-    public string $tipo        = 'amanha';  // amanha | semana | dia
-    public string $diaEspecifico = '1';
-    public array  $resultado   = [];
-    public bool   $enviando    = false;
-    public string $professorFiltro = ''; // '' = todos, ou ID específico
+    // Envio manual
+    public string $tipo            = 'amanha';
+    public string $diaEspecifico   = '1';
+    public array  $resultado       = [];
+    public bool   $enviando        = false;
+    public string $professorFiltro = '';
+
+    // Configuração automática
+    public bool   $envio_diario_ativo  = false;
+    public string $horario_diario      = '18:00';
+    public bool   $envio_semanal_ativo = false;
+    public string $dia_semanal         = '1';
+    public string $horario_semanal     = '07:00';
+
+    public function mount(): void
+    {
+        $cfg = ConfigEmail::atual();
+        $this->envio_diario_ativo  = $cfg->envio_diario_ativo;
+        $this->horario_diario      = substr($cfg->horario_diario, 0, 5);
+        $this->envio_semanal_ativo = $cfg->envio_semanal_ativo;
+        $this->dia_semanal         = (string) $cfg->dia_semanal;
+        $this->horario_semanal     = substr($cfg->horario_semanal, 0, 5);
+    }
+
+    public function salvarConfig(): void
+    {
+        $cfg = ConfigEmail::atual();
+        $cfg->update([
+            'envio_diario_ativo'  => $this->envio_diario_ativo,
+            'horario_diario'      => $this->horario_diario,
+            'envio_semanal_ativo' => $this->envio_semanal_ativo,
+            'dia_semanal'         => (int) $this->dia_semanal,
+            'horario_semanal'     => $this->horario_semanal,
+        ]);
+
+        Log::registrar('editou', 'Avisos por E-mail', 'Atualizou configuração de envio automático');
+        session()->flash('config_ok', 'Configuração salva com sucesso!');
+    }
 
     public function enviar(): void
     {
@@ -21,7 +54,6 @@ class EnvioEmails extends Component
         $this->resultado = [];
 
         $service = app(EnviarAvisoAulas::class);
-
         $semanal = $this->tipo === 'semana';
         $diaAlvo = null;
 
@@ -37,32 +69,27 @@ class EnvioEmails extends Component
             $diaAlvo = (int) $this->diaEspecifico;
         }
 
-        // Envio para um professor específico ou todos
         if ($this->professorFiltro) {
             $prof = Professor::find($this->professorFiltro);
             if ($prof) {
                 $ok = $service->enviarParaProfessor($prof, $semanal, $diaAlvo);
                 $this->resultado = $ok
                     ? ['enviados' => 1, 'detalhes' => ["✓ {$prof->nome} ({$prof->email})"]]
-                    : ['enviados' => 0, 'detalhes' => [], 'aviso' => "Nenhuma aula encontrada para {$prof->nome} no período, ou e-mail não cadastrado."];
+                    : ['enviados' => 0, 'detalhes' => [], 'aviso' => "Nenhuma aula encontrada para {$prof->nome}, ou e-mail não cadastrado."];
             }
         } else {
             $this->resultado = $service->enviarParaTodos($semanal, $diaAlvo);
         }
 
-        Log::registrar('enviou', 'Avisos por E-mail', "Enviou {$this->resultado['enviados']} aviso(s) de aula ({$this->tipo})");
-
+        Log::registrar('enviou', 'Avisos por E-mail', "Enviou {$this->resultado['enviados']} aviso(s) manual ({$this->tipo})");
         $this->enviando = false;
     }
 
     public function render()
     {
-        $professores = Professor::where('ativo', true)
-            ->whereNotNull('email')
-            ->orderBy('nome')->get();
+        $professores = Professor::where('ativo', true)->whereNotNull('email')->orderBy('nome')->get();
         $periodoAtivo = PeriodoLetivo::where('ativo', true)->first();
         $dias = [1=>'Segunda', 2=>'Terça', 3=>'Quarta', 4=>'Quinta', 5=>'Sexta'];
-
         return view('livewire.envio-emails', compact('professores', 'periodoAtivo', 'dias'));
     }
 }
