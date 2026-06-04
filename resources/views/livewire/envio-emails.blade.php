@@ -152,6 +152,84 @@
         </div>
     </div>
 
+    {{-- ════════ HISTÓRICO DE ENVIOS ════════ --}}
+    <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1"></i>Histórico de Envios</h6>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success">{{ $totalSucesso }} enviados</span>
+                    <span class="badge bg-danger">{{ $totalFalha }} falhas</span>
+                    <select wire:model.live="filtroHistorico" class="form-select form-select-sm" style="width:auto">
+                        <option value="todos">Todos</option>
+                        <option value="sucesso">Só sucessos</option>
+                        <option value="falha">Só falhas</option>
+                    </select>
+                    @if($totalSucesso + $totalFalha > 0)
+                    <button wire:click="limparHistorico"
+                            wire:confirm="Tem certeza que deseja limpar todo o histórico de envios?"
+                            class="btn btn-outline-danger btn-sm" title="Limpar histórico">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    @endif
+                </div>
+            </div>
+
+            @if($historico->isEmpty())
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>
+                Nenhum envio registrado ainda.
+            </div>
+            @else
+            <div class="table-responsive" style="max-height:400px;overflow-y:auto">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead style="position:sticky;top:0;background:#fff;z-index:1">
+                        <tr>
+                            <th class="small text-muted text-uppercase">Status</th>
+                            <th class="small text-muted text-uppercase">Data/Hora</th>
+                            <th class="small text-muted text-uppercase">Professor</th>
+                            <th class="small text-muted text-uppercase">E-mail</th>
+                            <th class="small text-muted text-uppercase">Tipo</th>
+                            <th class="small text-muted text-uppercase text-center">Aulas</th>
+                            <th class="small text-muted text-uppercase">Detalhe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($historico as $log)
+                        <tr>
+                            <td>
+                                @if($log->sucesso)
+                                <span class="badge bg-success"><i class="bi bi-check-lg"></i> OK</span>
+                                @else
+                                <span class="badge bg-danger"><i class="bi bi-x-lg"></i> Falha</span>
+                                @endif
+                            </td>
+                            <td class="small">{{ $log->enviado_em?->format('d/m/Y H:i') ?? $log->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="small fw-medium">{{ $log->professor_nome }}</td>
+                            <td class="small text-muted">{{ $log->email }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ $log->tipo_label }}</span></td>
+                            <td class="text-center small">{{ $log->qtd_aulas }}</td>
+                            <td class="small">
+                                @if($log->sucesso)
+                                <span class="text-success">Aceito pelo servidor</span>
+                                @else
+                                <span class="text-danger" title="{{ $log->erro }}">{{ Str::limit($log->erro, 50) }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-muted small mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                "Aceito pelo servidor" = o provedor de e-mail (ex: Gmail) recebeu e aceitou a mensagem sem erro.
+                Mostrando os últimos 100 registros.
+            </div>
+            @endif
+        </div>
+    </div>
+
     @endif
 
     {{-- Modal de Ajuda --}}

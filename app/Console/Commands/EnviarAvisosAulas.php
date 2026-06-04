@@ -27,7 +27,7 @@ class EnviarAvisosAulas extends Command
                 return self::SUCCESS;
             }
             $this->info('Enviando resumo SEMANAL para os professores...');
-            $resultado = $service->enviarParaTodos(true);
+            $resultado = $service->enviarParaTodos(true, null, 'semanal');
         } else {
             if (!$forcar && !$cfg->envio_diario_ativo) {
                 $this->info('Envio diário está DESATIVADO na configuração. Use --forcar para enviar mesmo assim.');
@@ -39,7 +39,7 @@ class EnviarAvisosAulas extends Command
                 return self::SUCCESS;
             }
             $this->info("Enviando avisos das aulas de amanhã (dia {$amanha})...");
-            $resultado = $service->enviarParaTodos(false, $amanha);
+            $resultado = $service->enviarParaTodos(false, $amanha, 'diario');
         }
 
         $this->info("✓ {$resultado['enviados']} e-mail(s) enviado(s).");
