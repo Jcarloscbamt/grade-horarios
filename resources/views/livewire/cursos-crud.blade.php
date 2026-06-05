@@ -170,10 +170,10 @@
                             <label class="form-label fw-medium">Total de Semestres <span class="text-danger">*</span></label>
                             <select wire:model="total_semestres" class="form-select">
                                 @for($s = 1; $s <= 10; $s++)
-                                <option value="{{ $s }}">{{ $s }} semestre{{ $s > 1 ? 's' : '' }} ({{ ceil($s/2) }} ano{{ ceil($s/2) > 1 ? 's' : '' }})</option>
+                                <option value="{{ $s }}">{{ $s }} semestre{{ $s > 1 ? 's' : '' }}</option>
                                 @endfor
                             </select>
-                            <div class="form-text">Ex: 6 semestres = 3 anos</div>
+                            
                         </div>
 
                         {{-- Status --}}
@@ -248,7 +248,7 @@
 <p class="text-muted mb-3">Cadastro dos cursos oferecidos pela instituição.</p>
 <ul class="list-unstyled">
     <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nome e Sigla:</strong> Ex: Análise e Desenvolvimento de Sistemas / ADS</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Total de Semestres:</strong> Define até quando as turmas podem avançar. Ex: 6 semestres = 3 anos</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Total de Semestres:</strong> Define até quando as turmas podem avançar.</li>
     <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Cor da Grade:</strong> Cor de destaque usada na impressão da grade de horários</li>
     <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Coordenador:</strong> Aparece no rodapé da grade impressa para contato</li>
 </ul>

@@ -100,23 +100,23 @@
         /* Horário — cor principal */
         .col-horario {
             background: {{ $cor }}; color: white;
-            padding: 0 8px; height: 110px; font-weight: bold; font-size: 13px;
-            display: flex; align-items: center; justify-content: center;
+            padding: 8px; height: 110px; font-weight: bold; font-size: 13px;
+            vertical-align: middle; text-align: center;
             white-space: nowrap;
         }
 
         /* Horário intervalo — cor principal */
         .col-horario-intervalo {
             background: {{ $cor }}; color: white;
-            padding: 0 8px; height: 55px; font-weight: bold; font-size: 13px;
-            display: flex; align-items: center; justify-content: center;
+            padding: 8px; height: 55px; font-weight: bold; font-size: 13px;
+            vertical-align: middle; text-align: center;
             white-space: nowrap;
         }
 
         /* Aula presencial — cor principal */
         .celula-aula {
             background: {{ $cor }}; padding: 12px 10px; height: 110px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            vertical-align: middle; text-align: center;
         }
         .celula-aula .disciplina {
             font-weight: bold; color: white;
@@ -127,7 +127,7 @@
         /* Aula online — mesma cor principal com label ONLINE */
         .celula-online {
             background: {{ $cor }}; padding: 12px 10px; height: 110px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            vertical-align: middle; text-align: center;
         }
         .celula-online .disciplina {
             font-weight: bold; color: white;
@@ -137,19 +137,21 @@
         .celula-online .online-label {
             color: rgba(255,255,255,0.85); font-size: 12px; margin-top: 6px; font-weight: bold;
             background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 3px;
+            display: inline-block;
         }
+        .celula-online .disciplina { display: block; }
 
         /* Intervalo — cor principal */
         .celula-intervalo {
             background: {{ $cor }}; height: 55px;
-            display: flex; align-items: center; justify-content: center;
+            vertical-align: middle; text-align: center;
             font-size: 13px; font-weight: bold; color: white; letter-spacing: 0.5px;
         }
 
         /* Intervalo online — cor principal */
         .celula-intervalo-online {
             background: {{ $cor }}; height: 55px;
-            display: flex; align-items: center; justify-content: center;
+            vertical-align: middle; text-align: center;
         }
         .badge-online-intervalo {
             background: rgba(0,0,0,0.25); color: white;
@@ -159,7 +161,7 @@
         /* Vazia — branco */
         .celula-vazia {
             background: white; height: 110px;
-            display: flex; align-items: center; justify-content: center;
+            vertical-align: middle; text-align: center;
             color: #ddd; font-size: 18px;
         }
 
@@ -238,37 +240,33 @@
         @foreach($horarios as $horario)
         @php $isIntervalo = strtolower($horario->tipo) === 'intervalo'; @endphp
         <tr>
-            <td>
-                @if($isIntervalo)
-                <div class="col-horario-intervalo">{{ substr($horario->hora_inicio,0,5) }} - {{ substr($horario->hora_fim,0,5) }}</div>
-                @else
-                <div class="col-horario">{{ substr($horario->hora_inicio,0,5) }} - {{ substr($horario->hora_fim,0,5) }}</div>
-                @endif
-            </td>
+            @if($isIntervalo)
+            <td class="col-horario-intervalo">{{ substr($horario->hora_inicio,0,5) }} - {{ substr($horario->hora_fim,0,5) }}</td>
+            @else
+            <td class="col-horario">{{ substr($horario->hora_inicio,0,5) }} - {{ substr($horario->hora_fim,0,5) }}</td>
+            @endif
             @foreach($dias as $numDia => $nomeDia)
             @php $aula = $grade[$horario->id][$numDia] ?? null; @endphp
-            <td>
                 @if($isIntervalo)
                     @if($aula && $aula->modalidade === 'online')
-                        <div class="celula-intervalo-online"><span class="badge-online-intervalo">ONLINE</span></div>
+                    <td class="celula-intervalo-online"><span class="badge-online-intervalo">ONLINE</span></td>
                     @else
-                        <div class="celula-intervalo">INTERVALO</div>
+                    <td class="celula-intervalo">INTERVALO</td>
                     @endif
                 @elseif($aula)
                     @if($aula->modalidade === 'online')
-                    <div class="celula-online">
+                    <td class="celula-online">
                         <div class="disciplina">{{ $aula->disciplina->nome }}</div>
                         <div class="online-label">ONLINE</div>
-                    </div>
+                    </td>
                     @else
-                    <div class="celula-aula">
+                    <td class="celula-aula">
                         <div class="disciplina">{{ $aula->disciplina->nome }}</div>
-                    </div>
+                    </td>
                     @endif
                 @else
-                    <div class="celula-vazia">—</div>
+                    <td class="celula-vazia">—</td>
                 @endif
-            </td>
             @endforeach
         </tr>
         @endforeach

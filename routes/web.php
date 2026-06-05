@@ -62,4 +62,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
+Route::get('/teste-print', fn() => view('teste-impressao'));
+
 require __DIR__ . '/auth.php';
