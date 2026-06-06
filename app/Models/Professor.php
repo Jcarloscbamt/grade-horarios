@@ -27,6 +27,12 @@ class Professor extends Model
         return $this->hasMany(ProfessorDisciplina::class);
     }
 
+    // NÍVEL 1: competências (curso + disciplina que sabe lecionar, sem limite)
+    public function competencias(): HasMany
+    {
+        return $this->hasMany(ProfessorCompetencia::class);
+    }
+
     // Helper: retorna disponibilidade sempre como array
     public function getDisponibilidadeArrayAttribute(): array
     {

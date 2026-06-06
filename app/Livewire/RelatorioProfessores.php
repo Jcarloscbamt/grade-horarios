@@ -13,14 +13,14 @@ class RelatorioProfessores extends Component
     public string $search    = '';
     public string $curso_id  = '';
     public string $turma_id  = '';
-    public string $disciplina_id = '';
+    public string $disciplina_nome = '';
     public string $filtroAtivo   = 'ativos';
     public bool   $showDuplicados = false;
 
     public function updatingSearch():   void { $this->resetPage(); }
-    public function updatingCursoId():  void { $this->resetPage(); $this->turma_id = ''; $this->disciplina_id = ''; }
+    public function updatingCursoId():  void { $this->resetPage(); $this->turma_id = ''; $this->disciplina_nome = ''; }
     public function updatingTurmaId():  void { $this->resetPage(); }
-    public function updatingDisciplinaId(): void { $this->resetPage(); }
+    public function updatingDisciplinaNome(): void { $this->resetPage(); }
 
     public function exportarCsv()
     {
@@ -96,9 +96,9 @@ class RelatorioProfessores extends Component
                 $q->whereHas('disciplinasTurmas', fn($q2) =>
                     $q2->where('turma_id', $this->turma_id))
             )
-            ->when($this->disciplina_id, fn($q) =>
-                $q->whereHas('disciplinasTurmas', fn($q2) =>
-                    $q2->where('disciplina_id', $this->disciplina_id))
+            ->when($this->disciplina_nome, fn($q) =>
+                $q->whereHas('disciplinasTurmas.disciplina', fn($q2) =>
+                    $q2->where('nome', $this->disciplina_nome))
             )
             ->orderBy('nome');
     }
@@ -144,7 +144,15 @@ class RelatorioProfessores extends Component
         $disciplinas = ($this->curso_id
             ? Disciplina::where('curso_id', $this->curso_id)
             : Disciplina::query())
-            ->orderBy('nome')->get(['id', 'nome']);
+            ->with('curso')
+            ->orderBy('nome')->get()
+            ->groupBy('nome')
+            ->map(fn($grupo, $nome) => [
+                'nome'   => $nome,
+                'cursos' => $grupo->map(fn($d) => $d->curso->sigla ?? $d->curso->nome ?? '?')
+                                  ->filter()->unique()->sort()->implode(', '),
+            ])
+            ->values();
         $dias        = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
         $duplicados = $this->showDuplicados ? $this->getDuplicados() : [];

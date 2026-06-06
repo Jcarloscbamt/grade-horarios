@@ -235,12 +235,23 @@ class AulasCrud extends Component
 
     public function toggleTodos(array $idsVisiveis): void
     {
-        if (count($this->selecionados) === count($idsVisiveis)) {
+        $idsVisiveis = array_map('intval', $idsVisiveis);
+        if (count($this->selecionados) === count($idsVisiveis) && count($idsVisiveis) > 0) {
             $this->selecionados = [];
             $this->todosSelecionados = false;
         } else {
             $this->selecionados = $idsVisiveis;
             $this->todosSelecionados = true;
+        }
+    }
+
+    // Marca/desmarca UMA aula (mesmo mecanismo do toggleTodos: sempre int)
+    public function toggleUm(int $id): void
+    {
+        if (in_array($id, $this->selecionados, true)) {
+            $this->selecionados = array_values(array_diff($this->selecionados, [$id]));
+        } else {
+            $this->selecionados[] = $id;
         }
     }
 

@@ -41,9 +41,9 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select wire:model.live="disciplina_id" class="form-select">
+                    <select wire:model.live="disciplina_nome" class="form-select">
                         <option value="">Todas as disciplinas</option>
-                        @foreach($disciplinas as $d)<option value="{{ $d->id }}">{{ $d->nome }}</option>@endforeach
+                        @foreach($disciplinas as $d)<option value="{{ $d['nome'] }}">{{ $d['nome'] }} ({{ $d['cursos'] }})</option>@endforeach
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -134,9 +134,9 @@
                         @forelse($professores as $professor)
                         @php
                             $vinculos = $professor->disciplinasTurmas()->with(['disciplina.curso', 'turma'])->get();
-                            // Quando há filtro de disciplina, mostra só os vínculos daquela disciplina
-                            if ($disciplina_id) {
-                                $vinculos = $vinculos->where('disciplina_id', (int)$disciplina_id)->values();
+                            // Quando há filtro de disciplina, mostra só os vínculos daquela disciplina (por nome)
+                            if ($disciplina_nome) {
+                                $vinculos = $vinculos->filter(fn($v) => ($v->disciplina->nome ?? '') === $disciplina_nome)->values();
                             }
                             $disp = $professor->disponibilidade;
                             $dispArr = is_array($disp) ? $disp : (is_string($disp) ? json_decode($disp, true) : []);

@@ -36,6 +36,11 @@ class ProfessoresCrud extends Component
     public string $sel_turma_id       = '';
     public int    $editandoVinculoIdx = -1;
 
+    // ── NÍVEL 1: Competências (curso + disciplina que o professor sabe lecionar) ──
+    public array  $competencias       = []; // [{curso_id, curso_nome, disciplina_id, disciplina_nome}]
+    public string $comp_curso_id      = ''; // curso selecionado no formulário de competência
+    public string $comp_disciplina_id = ''; // disciplina selecionada no formulário de competência
+
     // ── Modal / UI ────────────────────────────────────
     public bool   $showModal  = false;
     public bool   $showDelete = false;
@@ -207,6 +212,58 @@ class ProfessoresCrud extends Component
     }
 
     // ── Adicionar / editar vínculo ────────────────────
+    // ── NÍVEL 1: Competências ─────────────────────────
+    public function adicionarCompetencia(): void
+    {
+        if (!$this->comp_curso_id || !$this->comp_disciplina_id) {
+            $this->addError('competencia', 'Selecione o curso e a disciplina.');
+            return;
+        }
+
+        // Bloqueia duplicada
+        foreach ($this->competencias as $c) {
+            if ((int)$c['curso_id'] === (int)$this->comp_curso_id
+                && (int)$c['disciplina_id'] === (int)$this->comp_disciplina_id) {
+                $this->addError('competencia', 'Esta competência já foi adicionada.');
+                return;
+            }
+        }
+
+        $curso      = \App\Models\Curso::find($this->comp_curso_id);
+        $disciplina = Disciplina::find($this->comp_disciplina_id);
+        if (!$curso || !$disciplina) {
+            $this->addError('competencia', 'Curso ou disciplina inválidos.');
+            return;
+        }
+
+        $this->competencias[] = [
+            'curso_id'        => (int) $this->comp_curso_id,
+            'curso_nome'      => $curso->nome,
+            'disciplina_id'   => (int) $this->comp_disciplina_id,
+            'disciplina_nome' => $disciplina->nome,
+        ];
+
+        $this->comp_disciplina_id = '';
+        $this->resetValidation('competencia');
+    }
+
+    public function removerCompetencia(int $idx): void
+    {
+        if (!isset($this->competencias[$idx])) return;
+
+        $comp = $this->competencias[$idx];
+        // Remove a competência
+        unset($this->competencias[$idx]);
+        $this->competencias = array_values($this->competencias);
+
+        // Remove também os vínculos do período que dependiam dessa competência
+        // (mesma disciplina + mesmo curso), pois não pode haver vínculo sem competência
+        $this->vinculos = array_values(array_filter($this->vinculos, fn($v) =>
+            !((int)$v['disciplina_id'] === (int)$comp['disciplina_id']
+              && (int)$v['curso_id'] === (int)$comp['curso_id'])
+        ));
+    }
+
     public function adicionarVinculo(): void
     {
         if (!$this->sel_disciplina_id || !$this->sel_turma_id) {
@@ -329,6 +386,18 @@ class ProfessoresCrud extends Component
             ])
             ->toArray();
 
+        // Carrega competências (Nível 1)
+        $this->competencias = \App\Models\ProfessorCompetencia::where('professor_id', $id)
+            ->with(['curso', 'disciplina'])
+            ->get()
+            ->map(fn($c) => [
+                'curso_id'        => $c->curso_id,
+                'curso_nome'      => $c->curso->nome ?? '',
+                'disciplina_id'   => $c->disciplina_id,
+                'disciplina_nome' => $c->disciplina->nome ?? '',
+            ])
+            ->toArray();
+
         $this->modalTitle = 'Editar Professor';
         $this->showModal  = true;
     }
@@ -446,6 +515,16 @@ class ProfessoresCrud extends Component
             ]);
         }
 
+        // NÍVEL 1: sincroniza competências (curso + disciplina, sem turma, sem limite)
+        \App\Models\ProfessorCompetencia::where('professor_id', $prof->id)->delete();
+        foreach ($this->competencias as $c) {
+            \App\Models\ProfessorCompetencia::create([
+                'professor_id'  => $prof->id,
+                'curso_id'      => $c['curso_id'],
+                'disciplina_id' => $c['disciplina_id'],
+            ]);
+        }
+
         Log::registrar(
             $isNovo ? 'criou' : 'editou',
             'Professores',
@@ -477,6 +556,7 @@ class ProfessoresCrud extends Component
     {
         $prof = Professor::findOrFail($this->professorId);
         ProfessorDisciplina::where('professor_id', $this->professorId)->delete();
+        \App\Models\ProfessorCompetencia::where('professor_id', $this->professorId)->delete();
         $nome = $prof->nome;
         $prof->delete();
         Log::registrar('excluiu', 'Professores', 'Excluiu: ' . $nome);
@@ -502,6 +582,9 @@ class ProfessoresCrud extends Component
         $this->ativo               = true;
         $this->disponibilidade     = [];
         $this->vinculos            = [];
+        $this->competencias        = [];
+        $this->comp_curso_id       = '';
+        $this->comp_disciplina_id  = '';
         $this->filtro_curso_id    = '';
         $this->filtro_turma_id    = '';
         $this->sel_disciplina_id   = 0;
@@ -563,6 +646,7 @@ class ProfessoresCrud extends Component
         }
 
         // Disciplinas do semestre atual da turma selecionada
+        // NÍVEL 2: só oferece disciplinas que estão nas COMPETÊNCIAS do professor
         $disciplinasDisponiveis = [];
         $mostrarLista = !empty($this->filtro_turma_id);
         if ($mostrarLista) {
@@ -571,9 +655,16 @@ class ProfessoresCrud extends Component
                 $jaVinculadas = collect($this->vinculos)
                     ->where('turma_id', (int) $this->filtro_turma_id)
                     ->pluck('disciplina_id')->toArray();
+
+                // IDs de disciplinas que o professor TEM competência neste curso
+                $idsCompetencia = collect($this->competencias)
+                    ->where('curso_id', (int) $turmaFiltro->curso_id)
+                    ->pluck('disciplina_id')->map(fn($x) => (int)$x)->toArray();
+
                 $disciplinasDisponiveis = Disciplina::where('curso_id', $turmaFiltro->curso_id)
                     ->where('ativo', true)
                     ->where('semestre_grade', $turmaFiltro->semestre)
+                    ->whereIn('id', $idsCompetencia)   // ← só as competências do professor
                     ->whereNotIn('id', $jaVinculadas)
                     ->orderBy('nome')
                     ->get()
@@ -588,10 +679,24 @@ class ProfessoresCrud extends Component
         }
         $turmasDoVinculo = [];
 
+        // NÍVEL 1: dados do formulário de competências
+        $disciplinasCompetencia = [];
+        if ($this->comp_curso_id) {
+            $idsJaComp = collect($this->competencias)
+                ->where('curso_id', (int) $this->comp_curso_id)
+                ->pluck('disciplina_id')->map(fn($x) => (int)$x)->toArray();
+            $disciplinasCompetencia = Disciplina::where('curso_id', $this->comp_curso_id)
+                ->where('ativo', true)
+                ->whereNotIn('id', $idsJaComp)
+                ->orderBy('semestre_grade')->orderBy('nome')
+                ->get(['id', 'nome', 'semestre_grade'])
+                ->toArray();
+        }
+
         return view('livewire.professores-crud', compact(
             'professores', 'diasNomes',
             'disciplinasDisponiveis', 'mostrarLista', 'turmasDoVinculo',
-            'cursosFiltro', 'turmasFiltro'
+            'cursosFiltro', 'turmasFiltro', 'disciplinasCompetencia'
         ));
     }
 }

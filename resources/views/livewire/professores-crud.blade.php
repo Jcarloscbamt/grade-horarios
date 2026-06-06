@@ -208,10 +208,75 @@
                             </div>
                         </div>
 
-                        {{-- ── Coluna Direita: Disciplinas por Turma ── --}}
+                        {{-- ── Coluna Direita: Competências + Vínculos ── --}}
                         <div class="col-lg-7 p-4 d-flex flex-column" style="background:#f8f9fa">
+
+                            {{-- ═══ NÍVEL 1: COMPETÊNCIAS (o que o professor sabe lecionar) ═══ --}}
+                            <h6 class="fw-bold text-muted text-uppercase mb-2" style="font-size:11px;letter-spacing:.8px">
+                                <i class="bi bi-mortarboard me-1"></i> Competências — disciplinas que sabe lecionar
+                            </h6>
+                            <div class="text-muted mb-2" style="font-size:11px">
+                                Cadastre todas as disciplinas que o professor pode lecionar (sem limite). Depois, na seção abaixo, você vincula às turmas do período.
+                            </div>
+
+                            @error('competencia')
+                            <div class="alert alert-warning py-2 mb-2" style="font-size:13px"><i class="bi bi-exclamation-triangle me-1"></i>{{ $message }}</div>
+                            @enderror
+
+                            <div class="card border-0 shadow-sm mb-2">
+                                <div class="card-body p-3">
+                                    <div class="row g-2">
+                                        <div class="col-md-5">
+                                            <label class="form-label small mb-1">Curso</label>
+                                            <select wire:model.live="comp_curso_id" class="form-select form-select-sm">
+                                                <option value="">Selecione o curso</option>
+                                                @foreach($cursosFiltro as $c)<option value="{{ $c->id }}">{{ $c->nome }}</option>@endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small mb-1">Disciplina</label>
+                                            <select wire:model="comp_disciplina_id" class="form-select form-select-sm" {{ !$comp_curso_id ? 'disabled' : '' }}>
+                                                <option value="">{{ $comp_curso_id ? 'Selecione' : 'Escolha o curso' }}</option>
+                                                @foreach($disciplinasCompetencia as $d)
+                                                <option value="{{ $d['id'] }}">{{ $d['nome'] }} ({{ $d['semestre_grade'] }}º)</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button type="button" wire:click="adicionarCompetencia" class="btn btn-sm btn-primary w-100">
+                                                <i class="bi bi-plus-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Lista de competências --}}
+                            @if(count($competencias) > 0)
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                @foreach($competencias as $i => $comp)
+                                <span class="badge bg-info text-dark border d-flex align-items-center gap-1" style="font-size:12px;padding:6px 10px">
+                                    <i class="bi bi-mortarboard"></i>
+                                    {{ $comp['disciplina_nome'] }}
+                                    <span class="text-muted">({{ $comp['curso_nome'] }})</span>
+                                    <button type="button" wire:click="removerCompetencia({{ $i }})" class="btn-close ms-1" style="font-size:9px" title="Remover competência"></button>
+                                </span>
+                                @endforeach
+                            </div>
+                            <div class="text-muted mb-3" style="font-size:11px">
+                                <i class="bi bi-info-circle me-1"></i>{{ count($competencias) }} competência(s) cadastrada(s)
+                            </div>
+                            @else
+                            <div class="alert alert-light border text-muted py-2 mb-3" style="font-size:12px">
+                                <i class="bi bi-arrow-up me-1"></i>Adicione as competências primeiro. Os vínculos abaixo só aceitam disciplinas que o professor sabe lecionar.
+                            </div>
+                            @endif
+
+                            <hr class="my-2">
+
+                            {{-- ═══ NÍVEL 2: VÍNCULOS DO PERÍODO (turma, máx 5) ═══ --}}
                             <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size:11px;letter-spacing:.8px">
-                                <i class="bi bi-book me-1"></i> Disciplinas por Turma
+                                <i class="bi bi-calendar-check me-1"></i> Vínculos do período — turmas atribuídas (máx 5)
                             </h6>
 
                             @error('vinculo')
@@ -279,8 +344,9 @@
                                             </button>
                                             @empty
                                             <div class="text-center text-muted py-3 small">
-                                                <i class="bi bi-check-circle me-1 text-success"></i>
-                                                Todas as disciplinas deste semestre já foram vinculadas
+                                                <i class="bi bi-info-circle me-1 text-primary"></i>
+                                                Nenhuma disciplina disponível para esta turma.<br>
+                                                <span style="font-size:11px">Só aparecem disciplinas deste semestre que o professor tem como <strong>competência</strong>. Adicione a competência acima, ou todas já foram vinculadas.</span>
                                             </div>
                                             @endforelse
                                         </div>

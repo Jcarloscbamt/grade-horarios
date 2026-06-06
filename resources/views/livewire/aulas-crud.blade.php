@@ -74,11 +74,11 @@
                     <tbody>
                         @php $dias = [1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sáb']; @endphp
                         @forelse($aulas as $aula)
-                        <tr class="{{ in_array($aula->id, $selecionados) ? 'table-warning' : '' }}">
+                        <tr wire:key="aula-{{ $aula->id }}" class="{{ in_array($aula->id, $selecionados) ? 'table-warning' : '' }}">
                             <td class="ps-2" style="width:40px">
                                 <input type="checkbox" class="form-check-input"
-                                    wire:model.live="selecionados"
-                                    value="{{ $aula->id }}">
+                                    wire:click="toggleUm({{ $aula->id }})"
+                                    {{ in_array($aula->id, $selecionados) ? 'checked' : '' }}>
                             </td>
                             <td class="ps-1" style="text-transform:uppercase">{{ $dias[$aula->dia_semana] ?? $aula->dia_semana }}</td>
                             <td style="text-transform:uppercase">{{ $aula->turma->nome }}</td>
