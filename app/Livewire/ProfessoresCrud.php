@@ -218,6 +218,26 @@ class ProfessoresCrud extends Component
             return;
         }
 
+        // Bloqueia vínculo duplicado (mesma disciplina + turma)
+        foreach ($this->vinculos as $i => $v) {
+            if ($i === $this->editandoVinculoIdx) continue;
+            if ((int)$v['disciplina_id'] === (int)$this->sel_disciplina_id
+                && (int)$v['turma_id'] === (int)$this->sel_turma_id) {
+                $this->addError('vinculo', 'Este vínculo (disciplina + turma) já foi adicionado.');
+                return;
+            }
+        }
+
+        // LIMITE: máximo 5 vínculos por professor.
+        // A semana letiva tem 5 dias úteis e cada aula (disciplina+turma) ocupa 1 dia,
+        // então um professor não pode assumir mais de 5 aulas. Só bloqueia ao ADICIONAR novo.
+        if ($this->editandoVinculoIdx < 0 && count($this->vinculos) >= 5) {
+            $this->addError('vinculo',
+                'Limite de 5 vínculos atingido. Como a semana letiva tem apenas 5 dias úteis e cada aula ocupa 1 dia, '
+                . 'um professor pode assumir no máximo 5 turmas/disciplinas. Remova um vínculo ou distribua a disciplina para outro professor.');
+            return;
+        }
+
         // Usa todos os dias da disponibilidade geral
         // O Gerador de Grade gerencia os conflitos entre turmas automaticamente
         $turma = Turma::find($this->sel_turma_id);

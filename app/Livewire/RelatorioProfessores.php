@@ -2,7 +2,7 @@
 // app/Livewire/RelatorioProfessores.php
 namespace App\Livewire;
 
-use App\Models\{Professor, Curso, Turma};
+use App\Models\{Professor, Curso, Turma, Disciplina};
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,12 +13,14 @@ class RelatorioProfessores extends Component
     public string $search    = '';
     public string $curso_id  = '';
     public string $turma_id  = '';
+    public string $disciplina_id = '';
     public string $filtroAtivo   = 'ativos';
     public bool   $showDuplicados = false;
 
     public function updatingSearch():   void { $this->resetPage(); }
-    public function updatingCursoId():  void { $this->resetPage(); $this->turma_id = ''; }
+    public function updatingCursoId():  void { $this->resetPage(); $this->turma_id = ''; $this->disciplina_id = ''; }
     public function updatingTurmaId():  void { $this->resetPage(); }
+    public function updatingDisciplinaId(): void { $this->resetPage(); }
 
     public function exportarCsv()
     {
@@ -81,9 +83,7 @@ class RelatorioProfessores extends Component
             ->when($this->search, fn($q) =>
                 $q->where(function ($sub) {
                     $sub->where('nome', 'like', "%{$this->search}%")
-                        ->orWhere('email', 'like', "%{$this->search}%")
-                        ->orWhereHas('disciplinasTurmas.disciplina', fn($q2) =>
-                            $q2->where('nome', 'like', "%{$this->search}%"));
+                        ->orWhere('email', 'like', "%{$this->search}%");
                 })
             )
             ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
@@ -95,6 +95,10 @@ class RelatorioProfessores extends Component
             ->when($this->turma_id, fn($q) =>
                 $q->whereHas('disciplinasTurmas', fn($q2) =>
                     $q2->where('turma_id', $this->turma_id))
+            )
+            ->when($this->disciplina_id, fn($q) =>
+                $q->whereHas('disciplinasTurmas', fn($q2) =>
+                    $q2->where('disciplina_id', $this->disciplina_id))
             )
             ->orderBy('nome');
     }
@@ -137,10 +141,14 @@ class RelatorioProfessores extends Component
         $turmas      = $this->curso_id
             ? Turma::where('curso_id', $this->curso_id)->where('ativo', true)->orderBy('nome')->get()
             : Turma::where('ativo', true)->orderBy('nome')->get();
+        $disciplinas = ($this->curso_id
+            ? Disciplina::where('curso_id', $this->curso_id)
+            : Disciplina::query())
+            ->orderBy('nome')->get(['id', 'nome']);
         $dias        = [1=>'SEG', 2=>'TER', 3=>'QUA', 4=>'QUI', 5=>'SEX'];
 
         $duplicados = $this->showDuplicados ? $this->getDuplicados() : [];
 
-        return view('livewire.relatorio-professores', compact('professores', 'cursos', 'turmas', 'dias', 'duplicados'));
+        return view('livewire.relatorio-professores', compact('professores', 'cursos', 'turmas', 'disciplinas', 'dias', 'duplicados'));
     }
 }

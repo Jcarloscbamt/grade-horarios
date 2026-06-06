@@ -315,6 +315,7 @@
                                             <i class="bi bi-x-lg me-1"></i>Cancelar
                                         </button>
                                         <button type="button" wire:click="adicionarVinculo"
+                                            @if($editandoVinculoIdx < 0 && count($vinculos) >= 5) disabled @endif
                                             class="btn btn-sm w-100 {{ $editandoVinculoIdx >= 0 ? 'btn-warning' : 'btn-success' }}">
                                             <i class="bi bi-{{ $editandoVinculoIdx >= 0 ? 'check-lg' : 'plus-circle' }} me-1"></i>
                                             {{ $editandoVinculoIdx >= 0 ? 'Salvar Alteração' : 'Adicionar Vínculo' }}
@@ -358,8 +359,13 @@
                             </div>
 
                             @if(count($vinculos) > 0)
-                            <div class="text-muted text-end mt-2" style="font-size:12px">
-                                <i class="bi bi-info-circle me-1"></i>{{ count($vinculos) }} vínculo(s) adicionado(s)
+                            <div class="text-end mt-2" style="font-size:12px">
+                                <span class="badge {{ count($vinculos) >= 5 ? 'bg-danger' : (count($vinculos) >= 4 ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                                    <i class="bi bi-calendar-week me-1"></i>{{ count($vinculos) }} / 5 vínculos
+                                </span>
+                                @if(count($vinculos) >= 5)
+                                <div class="text-danger mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Limite atingido (5 dias úteis na semana).</div>
+                                @endif
                             </div>
                             @endif
                         </div>

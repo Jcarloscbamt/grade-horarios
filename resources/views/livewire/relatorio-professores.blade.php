@@ -26,21 +26,27 @@
             <div class="row g-2 align-items-center">
                 <div class="col-md-3">
                     <input type="text" wire:model.live.debounce.300ms="search"
-                        class="form-control" placeholder="Buscar por professor, e-mail ou disciplina...">
+                        class="form-control" placeholder="Buscar professor ou e-mail...">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select wire:model.live="curso_id" class="form-select">
                         <option value="">Todos os cursos</option>
                         @foreach($cursos as $c)<option value="{{ $c->id }}">{{ $c->nome }}</option>@endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select wire:model.live="turma_id" class="form-select">
                         <option value="">Todas as turmas</option>
                         @foreach($turmas as $t)<option value="{{ $t->id }}">{{ $t->nome }}</option>@endforeach
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <select wire:model.live="disciplina_id" class="form-select">
+                        <option value="">Todas as disciplinas</option>
+                        @foreach($disciplinas as $d)<option value="{{ $d->id }}">{{ $d->nome }}</option>@endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <select wire:model.live="filtroAtivo" class="form-select">
                         <option value="todos">Todos os status</option>
                         <option value="ativos">Somente Ativos</option>
@@ -128,6 +134,10 @@
                         @forelse($professores as $professor)
                         @php
                             $vinculos = $professor->disciplinasTurmas()->with(['disciplina.curso', 'turma'])->get();
+                            // Quando há filtro de disciplina, mostra só os vínculos daquela disciplina
+                            if ($disciplina_id) {
+                                $vinculos = $vinculos->where('disciplina_id', (int)$disciplina_id)->values();
+                            }
                             $disp = $professor->disponibilidade;
                             $dispArr = is_array($disp) ? $disp : (is_string($disp) ? json_decode($disp, true) : []);
                             $dispGeral = collect($dispArr ?? [])->map(fn($d) => $dias[$d] ?? $d);
