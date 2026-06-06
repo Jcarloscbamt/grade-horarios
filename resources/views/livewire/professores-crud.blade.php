@@ -401,6 +401,30 @@
     </div>
     @endif
 
+    {{-- Modal Aviso de Alocação (dias < disciplinas) --}}
+    @if($mostrarAvisoAlocacao)
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);z-index:1060">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center py-4">
+                    <div class="text-warning mb-3"><i class="bi bi-exclamation-triangle-fill" style="font-size:3rem"></i></div>
+                    <h5 class="fw-bold mb-2">Possível conflito na grade</h5>
+                    <p class="text-muted mb-0">{{ $msgAvisoAlocacao }}</p>
+                </div>
+                <div class="modal-footer border-top-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-light px-4" wire:click="cancelarAvisoAlocacao">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar e ajustar
+                    </button>
+                    <button type="button" class="btn btn-warning px-4" wire:click="confirmarSalvarComAviso" wire:loading.attr="disabled">
+                        <span wire:loading wire:target="confirmarSalvarComAviso" class="spinner-border spinner-border-sm me-1"></span>
+                        <i wire:loading.remove wire:target="confirmarSalvarComAviso" class="bi bi-check2 me-1"></i>Continuar e salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
 
 <x-help-modal titulo="Ajuda — Professores">
 <p class="text-muted mb-3">Cadastro de professores com suas disponibilidades e vínculos com disciplinas.</p>

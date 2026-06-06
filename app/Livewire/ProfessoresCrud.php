@@ -20,6 +20,11 @@ class ProfessoresCrud extends Component
     public bool   $ativo       = true;
     public array  $disponibilidade = []; // dias disponíveis (array de ints 1-5)
 
+    // ── Aviso de alocação (dias < disciplinas) ────────
+    public bool   $mostrarAvisoAlocacao    = false;
+    public string $msgAvisoAlocacao        = '';
+    public bool   $avisoAlocacaoConfirmado = false;
+
     // ── Vínculos disciplina/turma ─────────────────────
     public array  $vinculos           = []; // [{disciplina_id, disciplina_nome, curso_id, curso_nome, turma_id, turma_nome, dias}]
     public string $filtro_curso_id   = '';
@@ -308,6 +313,19 @@ class ProfessoresCrud extends Component
         $this->showModal  = true;
     }
 
+    public function confirmarSalvarComAviso(): void
+    {
+        $this->avisoAlocacaoConfirmado = true;
+        $this->mostrarAvisoAlocacao    = false;
+        $this->save();
+    }
+
+    public function cancelarAvisoAlocacao(): void
+    {
+        $this->mostrarAvisoAlocacao = false;
+        // mantém o formulário aberto para o usuário ajustar a disponibilidade
+    }
+
     public function save(): void
     {
         // Garantir que CPF e email estejam preenchidos
@@ -355,6 +373,30 @@ class ProfessoresCrud extends Component
         }
 
         $this->validate();
+
+        // ── AVISO DE ALOCAÇÃO: dias de disponibilidade < disciplinas vinculadas ──
+        // Um professor só dá 1 aula por dia, então N disciplinas exigem ao menos N dias.
+        $numDias = count($this->disponibilidade);
+        $numDisc = count($this->vinculos);
+        if ($numDisc > $numDias && !$this->avisoAlocacaoConfirmado) {
+            if ($numDisc > 5) {
+                // Impossível: mais disciplinas do que dias úteis na semana
+                $excedente = $numDisc - 5;
+                $this->msgAvisoAlocacao =
+                    "Este professor tem {$numDisc} disciplina(s) vinculada(s), mas a semana letiva tem apenas 5 dias úteis. "
+                    . "Como ele dá no máximo 1 aula por dia (5 no total), é IMPOSSÍVEL alocar todas na grade — "
+                    . "pelo menos {$excedente} disciplina(s) ficará(ão) em conflito. O ideal é redistribuir para outro professor. "
+                    . "Deseja salvar mesmo assim?";
+            } else {
+                $faltam = $numDisc - $numDias;
+                $this->msgAvisoAlocacao =
+                    "Este professor tem {$numDisc} disciplina(s) vinculada(s), mas apenas {$numDias} dia(s) de disponibilidade. "
+                    . "Como um professor só pode dar 1 aula por dia, faltam {$faltam} dia(s) — isso provavelmente vai gerar conflito(s) na geração da grade. "
+                    . "Deseja salvar mesmo assim?";
+            }
+            $this->mostrarAvisoAlocacao = true;
+            return; // aguarda decisão do usuário (Continuar / Cancelar)
+        }
 
         $isNovo = is_null($this->professorId);
         $cpfFormatado = $this->cpf;
@@ -448,6 +490,9 @@ class ProfessoresCrud extends Component
         $this->sel_curso_nome      = '';
         $this->sel_turma_id        = '';
         $this->editandoVinculoIdx  = -1;
+        $this->mostrarAvisoAlocacao    = false;
+        $this->msgAvisoAlocacao        = '';
+        $this->avisoAlocacaoConfirmado = false;
         $this->resetValidation();
     }
 

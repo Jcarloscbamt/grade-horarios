@@ -79,8 +79,12 @@ class RelatorioProfessores extends Component
     {
         return Professor::with(['disciplinasTurmas.disciplina.curso', 'disciplinasTurmas.turma'])
             ->when($this->search, fn($q) =>
-                $q->where('nome', 'like', "%{$this->search}%")
-                  ->orWhere('email', 'like', "%{$this->search}%")
+                $q->where(function ($sub) {
+                    $sub->where('nome', 'like', "%{$this->search}%")
+                        ->orWhere('email', 'like', "%{$this->search}%")
+                        ->orWhereHas('disciplinasTurmas.disciplina', fn($q2) =>
+                            $q2->where('nome', 'like', "%{$this->search}%"));
+                })
             )
             ->when($this->filtroAtivo === 'ativos', fn($q) => $q->where('ativo', true))
             ->when($this->filtroAtivo === 'inativos', fn($q) => $q->where('ativo', false))

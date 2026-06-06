@@ -26,7 +26,7 @@
             <div class="row g-2 align-items-center">
                 <div class="col-md-3">
                     <input type="text" wire:model.live.debounce.300ms="search"
-                        class="form-control" placeholder="Buscar professor ou e-mail...">
+                        class="form-control" placeholder="Buscar por professor, e-mail ou disciplina...">
                 </div>
                 <div class="col-md-3">
                     <select wire:model.live="curso_id" class="form-select">

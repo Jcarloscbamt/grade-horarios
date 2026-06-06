@@ -192,6 +192,24 @@ class GeradorGrade extends Component
         $pendentes = [];
         $conflitos = [];
 
+        // ── Carga de cada professor nas turmas selecionadas ──
+        // total = quantas disciplinas ele está vinculado (carga máxima possível)
+        // dias  = quantos dias de disponibilidade tem
+        $cargaProf = [];
+        $vincCarga = ProfessorDisciplina::whereIn('turma_id', $this->turmasSelecionadas)
+            ->with(['professor', 'disciplina', 'turma'])->get()
+            ->filter(fn($v) => $v->disciplina && $v->turma &&
+                (!$v->disciplina->semestre_grade || (int)$v->disciplina->semestre_grade === (int)$v->turma->semestre));
+        foreach ($vincCarga as $v) {
+            $pid = $v->professor_id;
+            if (!isset($cargaProf[$pid])) {
+                $disp = $v->professor->disponibilidade ?? [];
+                $dias = is_array($disp) ? $disp : (json_decode($disp ?? '[]', true) ?? []);
+                $cargaProf[$pid] = ['total' => 0, 'dias' => count($dias)];
+            }
+            $cargaProf[$pid]['total']++;
+        }
+
         foreach ($this->turmasSelecionadas as $turmaId) {
             $turma = Turma::with('curso')->find($turmaId);
             if (!$turma) continue;
@@ -216,7 +234,13 @@ class GeradorGrade extends Component
                 if ($grupo->count() > 1 && !$comSelecao) {
                     $key = $discId.'_'.$turmaId;
                     if (empty($this->escolhasProfessores[$key])) {
-                        $pendentes[] = ['disciplina_id' => $discId, 'disciplina_nome' => $disciplina->nome, 'turma_id' => $turmaId, 'turma_nome' => $turma->nome, 'professores' => $grupo->map(fn($v) => ['id' => $v->professor_id, 'nome' => $v->professor->nome ?? '?'])->values()->toArray()];
+                        $pendentes[] = ['disciplina_id' => $discId, 'disciplina_nome' => $disciplina->nome, 'turma_id' => $turmaId, 'turma_nome' => $turma->nome, 'professores' => $grupo->map(fn($v) => [
+                            'id' => $v->professor_id,
+                            'nome' => $v->professor->nome ?? '?',
+                            'dias' => $cargaProf[$v->professor_id]['dias'] ?? 0,
+                            'total_disc' => $cargaProf[$v->professor_id]['total'] ?? 0,
+                            'sobrecarregado' => ($cargaProf[$v->professor_id]['total'] ?? 0) > ($cargaProf[$v->professor_id]['dias'] ?? 0),
+                        ])->values()->toArray()];
                         continue;
                     }
                     $profId  = (int) $this->escolhasProfessores[$key];
@@ -434,27 +458,47 @@ class GeradorGrade extends Component
         }
 
         $resolvidos = 0;
-        $restantes  = [];
 
+        // Separa os conflitos tratáveis (sem_dia com professor) dos demais
+        $trataveis = [];
+        $restantes = [];
         foreach ($conflitos as $conflito) {
             if (($conflito['tipo'] ?? '') !== 'sem_dia' || empty($conflito['professor_id'])) {
                 $restantes[] = $conflito;
-                continue;
-            }
-
-            $ok = $this->colocarGlobal(
-                (int)$conflito['disciplina_id'],
-                (int)$conflito['professor_id'],
-                (int)$conflito['turma_id'],
-                0, []
-            );
-
-            if ($ok) {
-                $resolvidos++;
             } else {
-                $restantes[] = $conflito;
+                $trataveis[] = $conflito;
             }
         }
+
+        // ── REPARO EM MÚLTIPLAS PASSADAS ──
+        // Resolver um conflito pode liberar espaço para outro antes "impossível".
+        // Repete enquanto houver progresso (resolveu ao menos 1 na passada).
+        $maxPassadas = 6;
+        for ($passada = 0; $passada < $maxPassadas; $passada++) {
+            $resolvidoNestaPassada = false;
+            $aindaPendentes = [];
+
+            foreach ($trataveis as $conflito) {
+                $ok = $this->colocarGlobal(
+                    (int)$conflito['disciplina_id'],
+                    (int)$conflito['professor_id'],
+                    (int)$conflito['turma_id'],
+                    0, []
+                );
+                if ($ok) {
+                    $resolvidos++;
+                    $resolvidoNestaPassada = true;
+                } else {
+                    $aindaPendentes[] = $conflito;
+                }
+            }
+
+            $trataveis = $aindaPendentes;
+            if (empty($trataveis) || !$resolvidoNestaPassada) break; // nada mais a fazer
+        }
+
+        // O que sobrou continua como conflito
+        $restantes = array_merge($restantes, $trataveis);
 
         // Limpa itens removidos durante o reparo
         $previewLimpo = array_values(array_filter($this->gPreview, fn($it) => empty($it['_removido'])));
@@ -561,10 +605,19 @@ class GeradorGrade extends Component
 
                 // Aviso honesto de super-alocação
                 if ($totalDisc > $numDiasDisp) {
-                    $faltam = $totalDisc - $numDiasDisp;
-                    $conflitos[$idx]['aviso_alocacao'] =
-                        "{$professor->nome} tem {$totalDisc} disciplina(s) vinculada(s), mas apenas {$numDiasDisp} dia(s) disponível(is). " .
-                        "Um professor só pode dar 1 aula por dia, então faltam {$faltam} dia(s) — adicione mais dias na disponibilidade do professor OU redistribua disciplinas para outro professor.";
+                    if ($totalDisc > 5) {
+                        // IMPOSSÍVEL: mais disciplinas do que dias úteis na semana (5)
+                        $excedente = $totalDisc - 5;
+                        $conflitos[$idx]['aviso_alocacao'] =
+                            "{$professor->nome} tem {$totalDisc} disciplina(s) vinculada(s), mas a semana letiva tem apenas 5 dias úteis. " .
+                            "Como um professor dá no máximo 1 aula por dia (5 no total), é IMPOSSÍVEL alocar todas — não há 6º dia para adicionar. " .
+                            "Solução: redistribua pelo menos {$excedente} disciplina(s) para outro(s) professor(es).";
+                    } else {
+                        $faltam = $totalDisc - $numDiasDisp;
+                        $conflitos[$idx]['aviso_alocacao'] =
+                            "{$professor->nome} tem {$totalDisc} disciplina(s) vinculada(s), mas apenas {$numDiasDisp} dia(s) disponível(is). " .
+                            "Um professor só pode dar 1 aula por dia, então faltam {$faltam} dia(s) — adicione mais dias na disponibilidade do professor OU redistribua disciplinas para outro professor.";
+                    }
                 }
             }
         }
@@ -575,7 +628,7 @@ class GeradorGrade extends Component
     // ── Coloca uma disciplina movendo outras em cascata ────
     private function colocarGlobal(int $discId, int $profId, int $turmaId, int $depth, array $visitados): bool
     {
-        if ($depth > 8) return false; // limite de profundidade
+        if ($depth > 14) return false; // limite de profundidade (permite permutações longas)
 
         $chave = "$turmaId-$discId";
         if (in_array($chave, $visitados)) return false;

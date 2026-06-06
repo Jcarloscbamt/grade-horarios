@@ -127,6 +127,10 @@
             <h6 class="fw-bold text-primary mb-3">
                 <i class="bi bi-people me-1"></i>Selecione o professor para cada disciplina com múltiplos vínculos
             </h6>
+            <div class="alert alert-info py-2" style="font-size:12px">
+                <i class="bi bi-info-circle me-1"></i>
+                Ao lado de cada professor aparece <strong>vínculos / dias</strong>. Se os vínculos forem mais que os dias (⚠️), escolher esse professor tende a gerar conflito — prefira distribuir entre professores com folga.
+            </div>
             <div class="d-flex flex-column gap-3">
                 @foreach($pendentesSelecao as $pend)
                 @php $key = $pend['disciplina_id'].'_'.$pend['turma_id']; @endphp
@@ -147,6 +151,11 @@
                                 for="prof_{{ $key }}_{{ $prof['id'] }}"
                                 style="font-size:12px;cursor:pointer;font-weight:500">
                                 <i class="bi bi-person me-1"></i>{{ $prof['nome'] }}
+                                @isset($prof['total_disc'])
+                                <span class="ms-1 {{ ($prof['sobrecarregado'] ?? false) ? 'text-danger fw-bold' : 'text-muted' }}">
+                                    ({{ $prof['total_disc'] }} vínc / {{ $prof['dias'] }}d{{ ($prof['sobrecarregado'] ?? false) ? ' ⚠️' : '' }})
+                                </span>
+                                @endisset
                             </label>
                         </div>
                         @endforeach
@@ -176,7 +185,14 @@
 
     {{-- Conflitos --}}
     @if(count($conflitos) > 0)
-    <div class="card border-0 shadow-sm mb-3 border-start border-warning border-4">
+    <div class="card border-0 shadow-sm mb-3 border-start border-warning border-4 position-relative">
+        {{-- Overlay de carregamento: cobre a área enquanto regenera (evita botões piscando) --}}
+        <div wire:loading.flex wire:target="aceitarSugestao"
+             class="position-absolute top-0 start-0 w-100 h-100 align-items-center justify-content-center flex-column"
+             style="background:rgba(255,255,255,0.85);z-index:10;border-radius:.375rem">
+            <div class="spinner-border text-warning mb-2" role="status"></div>
+            <div class="fw-medium text-muted">Recalculando a grade...</div>
+        </div>
         <div class="card-body">
             <h6 class="fw-bold text-warning mb-3">
                 <i class="bi bi-exclamation-triangle me-1"></i>{{ count($conflitos) }} conflito(s) detectado(s)
@@ -218,24 +234,24 @@
                     @if(!empty($c['dias_livres']))
                     <div class="ms-4">
                         <div class="text-success fw-medium mb-1" style="font-size:12px">
-                            <i class="bi bi-lightbulb me-1"></i>Dia disponível sem conflito para {{ $c['professor'] ?? '' }}:
+                            <i class="bi bi-lightbulb me-1"></i>Sugestão: ADICIONAR este dia à disponibilidade de {{ $c['professor'] ?? '' }} (hoje ele NÃO atende neste dia):
                         </div>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             @foreach($c['dias_livres'] as $dia)
-                            <span class="badge bg-success" style="font-size:11px">{{ $dia['nome'] }}</span>
+                            <span class="badge bg-success" style="font-size:11px">+ {{ $dia['nome'] }}</span>
                             @endforeach
                             @if(isset($c['professor_id']))
                             <button type="button"
                                 wire:click="aceitarSugestao({{ $c['professor_id'] }}, {{ $c['turma_id'] }}, {{ $c['disciplina_id'] }}, {{ json_encode(array_column($c['dias_livres'], 'num')) }})"
                                 wire:loading.attr="disabled"
                                 class="btn btn-success btn-sm py-0 ms-1" style="font-size:11px">
-                                <i class="bi bi-check2-circle me-1"></i>Aceitar e regerar
+                                <i class="bi bi-check2-circle me-1"></i>Adicionar dia e regerar
                             </button>
                             @endif
                         </div>
                         <div class="text-muted mt-1" style="font-size:11px">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Ao aceitar, este dia será adicionado à disponibilidade do professor e a grade será regerada.
+                            <i class="bi bi-exclamation-circle me-1"></i>
+                            <strong>Atenção:</strong> ao confirmar, este dia será gravado permanentemente na disponibilidade do professor (cadastro), e a grade será regerada.
                         </div>
                     </div>
                     @elseif(isset($c['professor_id']))
