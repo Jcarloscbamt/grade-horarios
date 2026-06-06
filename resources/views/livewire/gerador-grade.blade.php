@@ -244,6 +244,12 @@
                         Nenhum dia livre fora da disponibilidade — revise a distribuição dos professores ou adicione mais dias ao professor.
                     </div>
                     @endif
+
+                    @if(!empty($c['aviso_alocacao']))
+                    <div class="ms-4 mt-2 alert alert-warning py-2 mb-0" style="font-size:12px">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ $c['aviso_alocacao'] }}
+                    </div>
+                    @endif
                     @if(isset($c['professor_id']))
                     <div class="ms-4 mt-2">
                         <a href="{{ route('professores') }}?editar={{ $c['professor_id'] }}"

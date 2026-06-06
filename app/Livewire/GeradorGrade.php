@@ -152,8 +152,20 @@ class GeradorGrade extends Component
             }
         }
 
+        // ── VALIDAÇÃO FINAL INCONDICIONAL (rede de segurança) ──
+        // Roda SEMPRE, independente de onde a alocação veio. Garante as 2 regras
+        // invioláveis: 1 professor não em 2 turmas/dia; 1 turma não com 2 disc/dia.
+        $val = $this->validarSemDuplicidade($melhorPreview);
+        $melhorPreview   = $val['preview'];
+        $melhorConflitos = array_merge($melhorConflitos, $val['conflitos']);
+
         // Adiciona conflitos base (turmas sem vínculo)
         $melhorConflitos = array_merge($conflitosBase, $melhorConflitos);
+
+        // ── SUGESTÕES INTELIGENTES E COORDENADAS ──
+        // Garante que conflitos do MESMO professor recebam dias DISTINTOS,
+        // e avisa honestamente quando o professor está super-alocado.
+        $melhorConflitos = $this->melhorarSugestoes($melhorConflitos, $melhorPreview);
 
         usort($melhorPreview, function ($a, $b) {
             if ($a['turma_nome'] !== $b['turma_nome']) return strcmp($a['turma_nome'], $b['turma_nome']);
@@ -450,6 +462,116 @@ class GeradorGrade extends Component
         return ['preview' => $previewLimpo, 'conflitos' => $restantes, 'resolvidos' => $resolvidos];
     }
 
+    // ── VALIDAÇÃO: garante que não há professor/turma duplicados no mesmo dia ──
+    // Percorre a prévia; a primeira alocação de cada (dia,prof) e (dia,turma) vale,
+    // qualquer subsequente que viole vira conflito (não entra na grade).
+    private function validarSemDuplicidade(array $preview): array
+    {
+        $validado   = [];
+        $conflitos  = [];
+        $vistoProf  = []; // [dia][professor_id] = true
+        $vistoTurma = []; // [dia][turma_id] = true
+
+        foreach ($preview as $item) {
+            $d = $item['dia_semana'];
+            $p = $item['professor_id'];
+            $t = $item['turma_id'];
+
+            if (isset($vistoProf[$d][$p]) || isset($vistoTurma[$d][$t])) {
+                // Viola uma regra inviolável — vira conflito, fora da grade
+                $conflitos[] = [
+                    'tipo' => 'sem_dia',
+                    'mensagem' => "{$item['turma_nome']} — {$item['disciplina']} ({$item['professor']}): não há combinação de dias possível.",
+                    'professor_id' => $p, 'professor' => $item['professor'],
+                    'turma_id' => $t, 'disciplina_id' => $item['disciplina_id'],
+                    'disciplina' => $item['disciplina'],
+                    'dias_livres' => [], 'diagnostico' => [],
+                ];
+                continue;
+            }
+
+            $vistoProf[$d][$p]  = true;
+            $vistoTurma[$d][$t] = true;
+            $validado[] = $item;
+        }
+
+        return ['preview' => $validado, 'conflitos' => $conflitos];
+    }
+
+    // ── SUGESTÕES COORDENADAS POR PROFESSOR ──
+    // Atribui dias DISTINTOS às sugestões de cada professor (nunca repete um dia
+    // que já é usado por ele ou já foi sugerido a outro conflito dele) e gera um
+    // aviso claro quando o professor tem mais disciplinas do que dias possíveis.
+    private function melhorarSugestoes(array $conflitos, array $preview): array
+    {
+        $nomeDias = [1=>'SEG',2=>'TER',3=>'QUA',4=>'QUI',5=>'SEX'];
+
+        // Agrupa os índices dos conflitos "sem_dia" por professor
+        $porProf = [];
+        foreach ($conflitos as $i => $c) {
+            if (($c['tipo'] ?? '') === 'sem_dia' && !empty($c['professor_id'])) {
+                $porProf[$c['professor_id']][] = $i;
+            }
+        }
+
+        foreach ($porProf as $profId => $indices) {
+            $professor = Professor::find($profId);
+            if (!$professor) continue;
+            $disp     = $professor->disponibilidade ?? [];
+            $diasProf = is_array($disp) ? $disp : (json_decode($disp ?? '[]', true) ?? []);
+            $diasProf = array_map('intval', $diasProf);
+
+            // Dias em que o professor JÁ dá aula na prévia
+            $diasOcupadosProf = collect($preview)->where('professor_id', $profId)
+                ->pluck('dia_semana')->unique()->map('intval')->toArray();
+
+            $alocadas   = count($diasOcupadosProf);
+            $emConflito = count($indices);
+            $totalDisc  = $alocadas + $emConflito;
+            $numDiasDisp = count($diasProf);
+
+            // Quantos dias EXTRAS poderiam de fato ser usados (1 disciplina por dia)
+            $diasSugeridos = [];
+
+            foreach ($indices as $idx) {
+                $c = $conflitos[$idx];
+                $turmaId = $c['turma_id'] ?? null;
+                $diasOcupadosTurma = $turmaId
+                    ? collect($preview)->where('turma_id', $turmaId)->pluck('dia_semana')->unique()->map('intval')->toArray()
+                    : [];
+
+                // Procura um dia FORA da disponibilidade que sirva e ainda não foi sugerido
+                $diaSugerido = null;
+                foreach (range(1,5) as $d) {
+                    if (in_array($d, $diasProf)) continue;          // já é dia dele
+                    if (in_array($d, $diasOcupadosProf)) continue;  // já dá aula nesse dia
+                    if (in_array($d, $diasSugeridos)) continue;     // já sugerido a outro conflito dele
+                    if (in_array($d, $diasOcupadosTurma)) continue; // turma ocupada nesse dia
+                    $diaSugerido = $d;
+                    break;
+                }
+
+                if ($diaSugerido !== null) {
+                    $diasSugeridos[] = $diaSugerido;
+                    $conflitos[$idx]['dias_livres'] = [['num' => $diaSugerido, 'nome' => $nomeDias[$diaSugerido]]];
+                } else {
+                    // Não há dia distinto disponível → não sugere (evita sugerir dia que daria conflito)
+                    $conflitos[$idx]['dias_livres'] = [];
+                }
+
+                // Aviso honesto de super-alocação
+                if ($totalDisc > $numDiasDisp) {
+                    $faltam = $totalDisc - $numDiasDisp;
+                    $conflitos[$idx]['aviso_alocacao'] =
+                        "{$professor->nome} tem {$totalDisc} disciplina(s) vinculada(s), mas apenas {$numDiasDisp} dia(s) disponível(is). " .
+                        "Um professor só pode dar 1 aula por dia, então faltam {$faltam} dia(s) — adicione mais dias na disponibilidade do professor OU redistribua disciplinas para outro professor.";
+                }
+            }
+        }
+
+        return $conflitos;
+    }
+
     // ── Coloca uma disciplina movendo outras em cascata ────
     private function colocarGlobal(int $discId, int $profId, int $turmaId, int $depth, array $visitados): bool
     {
@@ -482,17 +604,27 @@ class GeradorGrade extends Component
             $turma2 = $this->gProfBusy[$dia][$profId];
             if ($turma2 == $turmaId) continue;
             $idx2 = $this->gAssign[$turma2][$dia] ?? null;
-            if ($idx2 === null) continue;
+            // ignora placeholder de reserva (-1) ou índice inválido
+            if ($idx2 === null || $idx2 < 0 || !isset($this->gPreview[$idx2])) continue;
 
             $item2 = $this->gPreview[$idx2];
             // Remove temporariamente
             $this->removerGlobal($idx2, $turma2, $dia, $item2['professor_id']);
 
+            // RESERVA o slot (profId neste dia + turmaId neste dia) para que a
+            // recursão NÃO recoloque a aula movida de volta no mesmo dia/lugar.
+            // Sem isso, um professor com 1 só dia disponível seria alocado 2x.
+            $this->gProfBusy[$dia][$profId] = $turmaId;
+            $this->gAssign[$turmaId][$dia]  = -1; // placeholder de reserva
+
             if ($this->colocarGlobal($item2['disciplina_id'], $item2['professor_id'], $turma2, $depth+1, $visitados)) {
+                unset($this->gAssign[$turmaId][$dia]); // remove placeholder
                 $this->inserirGlobal($discId, $profId, $turmaId, $dia);
                 return true;
             }
-            // Restaura
+            // Falhou — desfaz reserva e restaura a aula original
+            unset($this->gProfBusy[$dia][$profId]);
+            unset($this->gAssign[$turmaId][$dia]);
             $this->restaurarGlobal($idx2, $turma2, $dia, $item2['professor_id']);
         }
 
@@ -503,18 +635,30 @@ class GeradorGrade extends Component
             if (!isset($this->gAssign[$turmaId][$dia])) continue;    // turma livre, tratado no caso A
 
             $idx3 = $this->gAssign[$turmaId][$dia];
+            // ignora placeholder de reserva (-1) ou índice inválido
+            if ($idx3 < 0 || !isset($this->gPreview[$idx3])) continue;
             $item3 = $this->gPreview[$idx3];
             $prof3 = $item3['professor_id'];
+            if ($prof3 == $profId) continue; // segurança: não mover a própria aula aqui
 
             // Remove temporariamente a aula do outro professor
             $this->removerGlobal($idx3, $turmaId, $dia, $prof3);
 
+            // RESERVA o slot turma+dia para profId, impedindo que a recursão
+            // recoloque a aula do outro professor de volta no mesmo lugar.
+            $this->gAssign[$turmaId][$dia]  = -1; // placeholder de reserva
+            $this->gProfBusy[$dia][$profId] = $turmaId;
+
             // Tenta realocar a disciplina do outro professor em outro lugar
             if ($this->colocarGlobal($item3['disciplina_id'], $prof3, $turmaId, $depth+1, $visitados)) {
+                unset($this->gAssign[$turmaId][$dia]);   // remove placeholder
+                unset($this->gProfBusy[$dia][$profId]);  // inserirGlobal re-seta corretamente
                 $this->inserirGlobal($discId, $profId, $turmaId, $dia);
                 return true;
             }
-            // Restaura
+            // Falhou — desfaz reserva e restaura
+            unset($this->gAssign[$turmaId][$dia]);
+            unset($this->gProfBusy[$dia][$profId]);
             $this->restaurarGlobal($idx3, $turmaId, $dia, $prof3);
         }
 
