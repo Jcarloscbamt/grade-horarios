@@ -1,111 +1,96 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Grade de Horários — UniSENAI MT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema web para geração e gerenciamento automático de grades de horários acadêmicas, desenvolvido para a UniSENAI MT. Monta a grade de várias turmas automaticamente respeitando a disponibilidade dos professores, evita conflitos, e ainda avisa os professores por e-mail sobre suas aulas.
 
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-
-
-# CRUD de Cursos — Laravel + Livewire
-## Instruções de instalação e configuração
+**Stack:** Laravel 12 · Livewire 3 · Bootstrap 5 · Spatie Laravel Permission · MySQL · PHP 8.3
 
 ---
 
-## 1. Instalar o Laravel (caso ainda não tenha o projeto)
+## Sumário
+
+- [Visão geral](#visão-geral)
+- [Principais funcionalidades](#principais-funcionalidades)
+- [Requisitos](#requisitos)
+- [Instalação](#instalação)
+- [Configuração de e-mail](#configuração-de-e-mail)
+- [Agendador de tarefas (scheduler)](#agendador-de-tarefas-scheduler)
+- [Perfis e permissões](#perfis-e-permissões)
+- [Como o gerador de grade funciona](#como-o-gerador-de-grade-funciona)
+- [Conceitos importantes](#conceitos-importantes)
+- [Documentação de instalação](#documentação-de-instalação)
+- [Estrutura do projeto](#estrutura-do-projeto)
+
+---
+
+## Visão geral
+
+O sistema resolve um problema clássico das instituições de ensino: montar a grade de horários de várias turmas sem que um professor caia em duas turmas no mesmo dia, sem que uma turma tenha duas disciplinas no mesmo horário, e respeitando os dias em que cada professor está disponível.
+
+O coordenador cadastra cursos, turmas, disciplinas, professores (com suas competências e disponibilidade) e salas. Com um clique, o sistema gera a grade completa, aponta conflitos quando existem e sugere soluções. A grade pode ser visualizada na tela e impressa (colorida ou preto e branco), uma turma por página.
+
+---
+
+## Principais funcionalidades
+
+- **Gerador de grade automático** — monta a grade de múltiplas turmas respeitando disponibilidade, sem conflitos de professor/turma/sala. Quando há conflito, explica o motivo e sugere dias alternativos.
+- **Cadastros completos** — cursos, turmas, disciplinas, professores, salas, horários e períodos letivos.
+- **Professores em dois níveis** — *competências* (disciplinas que sabe lecionar, sem limite) e *vínculos do período* (turmas que vai lecionar, máximo 5, pois a semana tem 5 dias úteis).
+- **Impressão da grade** — colorida ou P&B, uma turma por página, com cabeçalho institucional, intervalo e QR Code de contato da coordenação.
+- **Avisos por e-mail** — envio automático diário (aulas do dia seguinte) e resumo semanal aos professores, com horários configuráveis e histórico de envios.
+- **Relatórios** — relatório de professores com filtros por curso, turma e disciplina; identificação de disciplinas com mais de um professor por turma.
+- **Períodos letivos** — múltiplos períodos coexistem; avanço de semestre das turmas em lote, com inativação automática das turmas que concluíram o curso.
+- **Controle de acesso** — perfis admin, coordenador e consulta (Spatie Permission).
+- **Logs e ajuda** — registro de ações e ajuda contextual em cada tela, além de um manual completo no menu.
+
+---
+
+## Requisitos
+
+| Software   | Versão           |
+|------------|------------------|
+| PHP        | 8.3 ou superior  |
+| Composer   | (gerenciador PHP)|
+| MySQL      | 8.0 ou superior  |
+| Node.js    | 18 LTS ou superior |
+| Git        | qualquer versão  |
+
+Extensões PHP: `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`, `fileinfo`, `curl`, `gd`.
+
+---
+
+## Instalação
+
+> Para instalação detalhada em servidor (Windows local ou Linux dedicado com Nginx), veja os manuais em [Documentação de instalação](#documentação-de-instalação).
+
+**1. Clonar o projeto**
 
 ```bash
-composer create-project laravel/laravel grade-horarios
+git clone https://github.com/Jcarloscbamt/grade-horarios.git
 cd grade-horarios
 ```
 
----
-
-## 2. Instalar o Livewire
+**2. Instalar dependências**
 
 ```bash
-composer require livewire/livewire
+composer install
+npm install
+npm run build
 ```
 
----
-
-## 3. Instalar o Spatie Laravel Permission (controle de acesso)
+**3. Configurar o ambiente**
 
 ```bash
-composer require spatie/laravel-permission
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
-php artisan migrate
+cp .env.example .env
+php artisan key:generate
 ```
 
----
-
-## 4. Instalar o Laravel Breeze (autenticação)
-
-```bash
-composer require laravel/breeze --dev
-php artisan breeze:install blade
-php artisan migrate
-npm install && npm run build
-```
-
----
-
-## 5. Configurar o banco de dados no .env
+Edite o `.env` com os dados do banco e o fuso horário:
 
 ```env
+APP_NAME="Grade de Horarios UniSENAI MT"
+APP_TIMEZONE=America/Cuiaba
+APP_URL=http://127.0.0.1:8000
+
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -114,91 +99,188 @@ DB_USERNAME=root
 DB_PASSWORD=sua_senha
 ```
 
----
+**4. Criar o banco de dados**
 
-## 6. Copiar os arquivos gerados para o projeto
+```sql
+CREATE DATABASE grade_horarios CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
-| Arquivo gerado                              | Destino no projeto Laravel                                          |
-|---------------------------------------------|---------------------------------------------------------------------|
-| migrations/2026_03_14_000001_create_cursos_table.php | database/migrations/                                     |
-| models/Curso.php                            | app/Models/Curso.php                                                |
-| livewire/CursosCrud.php                     | app/Livewire/CursosCrud.php                                         |
-| views/livewire/cursos-crud.blade.php        | resources/views/livewire/cursos-crud.blade.php                      |
-| routes/web.php                              | routes/web.php (mesclar com o existente)                            |
-
----
-
-## 7. Rodar a migration
+**5. Rodar migrations e seeders**
 
 ```bash
 php artisan migrate
-```
-
----
-
-## 8. Configurar os perfis (roles) no DatabaseSeeder
-
-```php
-// database/seeders/DatabaseSeeder.php
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-
-Role::create(['name' => 'admin']);
-Role::create(['name' => 'coordenador']);
-```
-
-Rodar o seeder:
-```bash
 php artisan db:seed
 ```
 
----
+O seeder cria os perfis (`admin`, `coordenador`, `consulta`).
 
-## 9. Adicionar o Bootstrap e Bootstrap Icons no layout
+**6. Criar o usuário administrador**
 
-No arquivo `resources/views/layouts/app.blade.php`, adicionar no `<head>`:
-
-```html
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+```bash
+php artisan tinker
 ```
 
-E antes do `</body>`:
-```html
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+```php
+$user = App\Models\User::create([
+    'name'     => 'Administrador',
+    'email'    => 'admin@unisenai.com.br',
+    'password' => bcrypt('TroqueEstaSenha123'),
+]);
+$user->assignRole('admin');
+exit
 ```
 
----
+**7. Iniciar o servidor**
 
-## 10. Registrar o componente Livewire na rota
-
-No `routes/web.php` já está configurado. Acessar:
-
-```
-http://localhost/cursos
+```bash
+php artisan serve
 ```
 
----
-
-## Estrutura de permissões (Spatie)
-
-| Ação       | Admin | Coordenador |
-|------------|-------|-------------|
-| Visualizar | ✅    | ✅ (só seu curso) |
-| Incluir    | ✅    | ✅          |
-| Editar     | ✅    | ✅          |
-| Excluir    | ✅    | ❌          |
-
-O botão **Excluir** na view usa `@can('admin')` para aparecer somente para administradores.
+Acesse `http://127.0.0.1:8000`. Para acesso por outros dispositivos na rede, use `php artisan serve --host=0.0.0.0 --port=8000`.
 
 ---
 
-## Próximos CRUDs a gerar
+## Configuração de e-mail
 
-- [ ] Turmas
-- [ ] Disciplinas
-- [ ] Professores
-- [ ] Salas
-- [ ] Horários
-- [ ] Períodos Letivos
-- [ ] Aulas (Grade de Horários)
+O sistema envia avisos aos professores. Para habilitar, configure o SMTP no `.env` (exemplo com Gmail):
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=seuemail@gmail.com
+MAIL_PASSWORD=senha_de_app_16_caracteres
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="seuemail@gmail.com"
+MAIL_FROM_NAME="Grade de Horarios UniSENAI MT"
+```
+
+> O Gmail exige uma **Senha de App** de 16 caracteres (com verificação em duas etapas ativada), não a senha normal da conta.
+
+Após editar o `.env`, limpe o cache de configuração:
+
+```bash
+php artisan config:clear
+```
+
+**Testar o envio** (ignora horário/dia):
+
+```bash
+php artisan avisos:aulas --forcar
+```
+
+Os horários, a ativação dos envios e o histórico ficam na tela **Envio de E-mails** (acesso admin).
+
+---
+
+## Agendador de tarefas (scheduler)
+
+Para os e-mails saírem automaticamente nos horários configurados, o agendador do Laravel precisa rodar a cada minuto. A lógica já está em `routes/console.php` — basta executar o `schedule:run` continuamente.
+
+**Linux (cron):**
+
+```bash
+crontab -e
+```
+
+```cron
+* * * * * cd /caminho/para/grade-horarios && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Windows:** crie uma tarefa no Agendador de Tarefas que execute `php artisan schedule:run` a cada minuto (detalhado no manual de instalação).
+
+| Tipo    | O que envia            | Quando                                             |
+|---------|------------------------|----------------------------------------------------|
+| Diário  | Aulas do dia seguinte  | Todo dia no horário configurado. Pula fim de semana. |
+| Semanal | Resumo da semana       | No dia e horário configurados.                     |
+
+---
+
+## Perfis e permissões
+
+| Ação        | Admin | Coordenador        | Consulta |
+|-------------|-------|--------------------|----------|
+| Visualizar  | ✅    | ✅                 | ✅       |
+| Incluir     | ✅    | ✅                 | ❌       |
+| Editar      | ✅    | ✅                 | ❌       |
+| Excluir     | ✅    | ❌                 | ❌       |
+| Gerar grade | ✅    | ✅                 | ❌       |
+| Administração (usuários, logs, e-mails) | ✅ | ❌ | ❌ |
+
+Controle de acesso via [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission). Botões e telas restritas usam diretivas como `@role('admin')` / `@hasrole('admin')`.
+
+---
+
+## Como o gerador de grade funciona
+
+O gerador não tenta alocar de qualquer jeito — segue uma estratégia para resolver o máximo de conflitos automaticamente:
+
+1. **Escassez (MRV)** — aloca primeiro os professores com menos dias disponíveis (menos opções), como num quebra-cabeça começando pelas peças mais difíceis.
+2. **Distribuição (matching)** — distribui as aulas de cada professor garantindo no máximo uma aula por dia.
+3. **Reparo global multipassada** — quando duas aulas disputam o mesmo dia, move uma para outro dia livre, em várias rodadas (resolver um conflito libera espaço para outro).
+4. **Validação de duplicidade** — checagem final que garante as regras invioláveis.
+5. **Sugestões coordenadas** — para o que sobrar, sugere dias específicos a adicionar à disponibilidade do professor.
+
+**Regras invioláveis:**
+
+- Um professor não pode estar em duas turmas no mesmo dia.
+- Uma turma não pode ter duas disciplinas no mesmo dia.
+- Uma sala não pode ser usada por duas turmas ao mesmo tempo.
+
+Quando um conflito não pode ser resolvido, o sistema explica o motivo (faltam dias, professor com mais de 5 vínculos, etc.) e oferece sugestões.
+
+---
+
+## Conceitos importantes
+
+- **1 vínculo = 1 aula = 1 dia.** Cada disciplina que um professor leciona em uma turma ocupa um dia. Como a semana tem 5 dias úteis, o máximo é **5 vínculos por professor**.
+- **Competências × vínculos.** Competência é o que o professor *sabe* lecionar (sem limite); vínculo é o que ele *vai* lecionar no período (máximo 5). Os vínculos só aceitam disciplinas das competências.
+- **Períodos letivos.** Apenas um fica ativo por vez (usado pelos e-mails). Vários coexistem; cada aula pertence a um período. Ativar um período não apaga as grades dos outros.
+- **Virada de semestre.** Fluxo recomendado: criar o novo período (inativo) → avançar o semestre das turmas → ajustar vínculos → gerar e conferir → ativar o novo período. Turmas que concluem o curso são inativadas automaticamente ao avançar.
+
+---
+
+## Documentação de instalação
+
+Há guias de instalação detalhados (com passo a passo de e-mail, scheduler e configurações de servidor):
+
+- **Computador local (Windows/Linux)** — uso interno, servidor simples.
+- **Servidor Linux dedicado (Ubuntu Server + Nginx + PHP-FPM + MySQL)** — uso permanente na instituição.
+
+Consulte os manuais distribuídos com o projeto (`Manual_Instalacao_*.docx`).
+
+---
+
+## Estrutura do projeto
+
+```
+app/
+  Livewire/         Componentes das telas (CRUDs, gerador, relatórios, e-mails)
+  Models/           Modelos Eloquent
+  Http/Controllers/ Controladores (ex.: impressão da grade)
+  Services/         Serviços (ex.: envio de avisos por e-mail)
+  Console/Commands/ Comando avisos:aulas
+  Mail/             E-mails (aviso de aula)
+database/
+  migrations/       Estrutura do banco
+  seeders/          Perfis e dados iniciais
+resources/views/
+  livewire/         Telas Livewire
+  emails/           Modelos de e-mail
+  grade-impressao*  Páginas de impressão da grade
+routes/
+  web.php           Rotas da aplicação
+  console.php       Agendamento dos e-mails (scheduler)
+```
+
+### Principais telas
+
+Grade de Horários · Gerador de Grade · Cursos · Turmas · Disciplinas · Professores · Salas · Horários · Períodos Letivos · Aulas · Relatórios (Grade e Professores) · Usuários · Logs · Envio de E-mails · Ajuda.
+
+---
+
+## Créditos
+
+Desenvolvido para a **UniSENAI MT — Departamento de TI**.
+
+Construído sobre [Laravel](https://laravel.com), [Livewire](https://livewire.laravel.com), [Bootstrap](https://getbootstrap.com) e [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission). O framework Laravel é open-source sob a [licença MIT](https://opensource.org/licenses/MIT).
