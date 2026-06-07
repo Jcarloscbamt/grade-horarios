@@ -499,15 +499,31 @@
 
 
 <x-help-modal titulo="Ajuda — Professores">
-<p class="text-muted mb-3">Cadastro de professores com suas disponibilidades e vínculos com disciplinas.</p>
-<ul class="list-unstyled">
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Disponibilidade Geral:</strong> Dias da semana em que o professor pode lecionar. <strong>Obrigatório.</strong></li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Vínculos:</strong> Define quais disciplinas/turmas o professor leciona. Filtro: Curso → Turma → Disciplinas do semestre</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Regra:</strong> Um professor não pode dar aula no mesmo dia para turmas diferentes. O Gerador controla isso automaticamente</li>
-</ul>
-<div class="alert alert-info py-2 mt-2" style="font-size:12px">
-    <i class="bi bi-lightbulb me-1"></i>
-    Ao alterar a disponibilidade e salvar, todos os vínculos são atualizados automaticamente com os novos dias.
+<p class="text-muted mb-3">Cadastro de professores com disponibilidade, competências e vínculos do período.</p>
+
+<h6 class="fw-bold"><i class="bi bi-calendar-week text-secondary me-1"></i>Disponibilidade Geral</h6>
+<p style="font-size:13px">Dias da semana em que o professor pode lecionar. <strong>Obrigatório.</strong> O número de dias precisa ser igual ou maior que o número de vínculos, senão o Gerador não consegue alocar tudo.</p>
+
+<hr>
+
+<h6 class="fw-bold"><i class="bi bi-mortarboard text-info me-1"></i>Competências <span class="badge bg-info text-dark">Nível 1</span></h6>
+<p style="font-size:13px">São as disciplinas que o professor <strong>sabe lecionar</strong> (curso + disciplina), <strong>sem limite</strong>. É o "currículo" dele. Não tem turma ainda — serve para depois você saber quais disciplinas pode atribuir a ele.</p>
+
+<hr>
+
+<h6 class="fw-bold"><i class="bi bi-calendar-check text-success me-1"></i>Vínculos do período <span class="badge bg-success">Nível 2</span></h6>
+<p style="font-size:13px">São as turmas que o professor <strong>realmente vai lecionar</strong> neste período (curso + turma + disciplina). Ao escolher a turma, só aparecem as disciplinas que estão nas <strong>competências</strong> dele.</p>
+<div class="alert alert-warning py-2" style="font-size:13px">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    <strong>Limite de 5 vínculos.</strong> Cada vínculo vira 1 aula e ocupa 1 dia. Como a semana tem 5 dias úteis, um professor pode assumir no máximo 5 turmas/disciplinas. O contador "X / 5" mostra quanto já foi usado.
 </div>
+
+<hr>
+
+<ul class="list-unstyled" style="font-size:13px">
+    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Um professor não pode dar aula para turmas diferentes no mesmo dia — o Gerador controla isso</li>
+    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Ao alterar a disponibilidade e salvar, todos os vínculos são atualizados com os novos dias</li>
+    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Remover uma competência também remove os vínculos que dependem dela</li>
+</ul>
 </x-help-modal>
 </div>

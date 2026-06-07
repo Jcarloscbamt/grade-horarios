@@ -201,11 +201,28 @@ class PeriodosLetivosCrud extends Component
             $count++;
         }
 
-        \App\Models\Log::registrar('editou', 'Turmas', "Avançou semestre de {$count} turma(s)");
+        // Inativa automaticamente as turmas que concluíram (último semestre)
+        $inativadas = 0;
+        foreach ($this->previewConcluidas as $item) {
+            \App\Models\Turma::where('id', $item['id'])->update(['ativo' => false]);
+            $inativadas++;
+        }
+
+        $msgLog = "Avançou semestre de {$count} turma(s)";
+        if ($inativadas > 0) {
+            $msgLog .= " e inativou {$inativadas} turma(s) concluída(s)";
+        }
+        \App\Models\Log::registrar('editou', 'Turmas', $msgLog);
+
         $this->showAvancar       = false;
         $this->previewAvanco     = [];
         $this->previewConcluidas = [];
-        session()->flash('success', "Semestre avançado em {$count} turma(s) com sucesso!");
+
+        $msg = "Semestre avançado em {$count} turma(s)";
+        if ($inativadas > 0) {
+            $msg .= ". {$inativadas} turma(s) concluída(s) foram inativadas";
+        }
+        session()->flash('success', $msg . '!');
     }
 
     public function cancelarAvanco(): void

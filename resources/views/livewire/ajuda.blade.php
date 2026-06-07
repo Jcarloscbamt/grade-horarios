@@ -155,19 +155,22 @@
             'id' => 'professores',
             'icon' => 'bi-person-badge',
             'title' => 'Professores',
-            'desc' => 'Cadastro com disponibilidade e vínculos de disciplinas',
+            'desc' => 'Disponibilidade, competências (Nível 1) e vínculos do período (Nível 2)',
             'color' => '#E30613',
             'campos' => [
                 ['Disponibilidade Geral', 'Dias da semana em que o professor pode lecionar. OBRIGATÓRIO'],
-                ['Vínculos', 'Define quais disciplinas/turmas o professor leciona. Filtro: Curso → Turma → Disciplinas do semestre atual'],
+                ['Competências (Nível 1)', 'Disciplinas que o professor SABE lecionar (curso + disciplina), SEM limite. É o currículo dele, ainda sem turma'],
+                ['Vínculos do período (Nível 2)', 'Turmas que o professor REALMENTE vai lecionar (curso + turma + disciplina). Só aparecem disciplinas das competências dele. MÁXIMO 5'],
             ],
             'dicas' => [
+                'Competências não têm limite; vínculos do período têm limite de 5 (a semana tem só 5 dias úteis, e cada aula ocupa 1 dia)',
+                'Cadastre primeiro as competências; depois vincule às turmas — o sistema só oferece disciplinas que o professor tem como competência',
                 'Regra fundamental: um professor NÃO pode dar aula em turmas diferentes no mesmo dia',
-                'Mínimo de dias disponíveis = número de turmas distintas vinculadas. Ex: 4 turmas = mínimo 4 dias',
-                'Ao salvar, o sistema valida automaticamente se há dias suficientes',
+                'Mínimo de dias disponíveis = número de vínculos. Ex: 4 vínculos = mínimo 4 dias',
                 'Ao alterar a disponibilidade e salvar, todos os vínculos são atualizados automaticamente',
+                'Remover uma competência remove também os vínculos que dependiam dela',
             ],
-            'alerta' => 'Se o professor tiver menos dias disponíveis que turmas vinculadas, o Gerador não conseguirá alocar todas as disciplinas.',
+            'alerta' => 'Se o professor tiver menos dias disponíveis que vínculos, o Gerador não conseguirá alocar todas as disciplinas. O limite de 5 vínculos é absoluto: não há 6º dia na semana.',
         ],
         ] as $sec)
         <div class="accordion-item border-0 shadow-sm mb-2">
@@ -253,12 +256,13 @@
                         <div class="col-md-6">
                             <h6 class="fw-bold mb-2" style="font-size:13px"><i class="bi bi-lightbulb me-1" style="color:#f59e0b"></i>Fluxo ao iniciar novo semestre</h6>
                             <ol class="ps-3" style="font-size:13px">
-                                <li class="mb-1">Criar novo período letivo</li>
-                                <li class="mb-1">Ativar o novo período</li>
-                                <li class="mb-1">Clicar em <strong>"Avançar Semestre das Turmas"</strong></li>
-                                <li class="mb-1">Conferir os semestres das turmas</li>
-                                <li class="mb-1">Gerar as novas grades</li>
+                                <li class="mb-1">Criar o novo período (deixar <strong>inativo</strong>)</li>
+                                <li class="mb-1"><strong>Avançar Semestre das Turmas</strong> (sobe as que continuam, inativa as formadas)</li>
+                                <li class="mb-1">Ajustar os vínculos que mudaram</li>
+                                <li class="mb-1">Gerar a nova grade e conferir</li>
+                                <li class="mb-1"><strong>Ativar o novo período</strong> (desativa o anterior)</li>
                             </ol>
+                            <div class="text-muted mt-1" style="font-size:11px">Turmas no último semestre são inativadas automaticamente ao avançar.</div>
                         </div>
                     </div>
                 </div>
@@ -311,9 +315,19 @@
                             </ul>
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <h6 class="fw-bold mb-2" style="font-size:13px"><i class="bi bi-gear me-1 text-secondary"></i>Como o gerador resolve conflitos (passo a passo)</h6>
+                        <ol class="ps-3" style="font-size:13px">
+                            <li class="mb-1"><strong>Escassez (MRV):</strong> aloca primeiro os professores com menos dias disponíveis, porque têm menos opções — como começar um quebra-cabeça pelas peças mais difíceis.</li>
+                            <li class="mb-1"><strong>Distribuição 1 por dia:</strong> garante que cada professor não fique em duas turmas no mesmo dia.</li>
+                            <li class="mb-1"><strong>Reparo global multipassada:</strong> quando duas aulas brigam pelo mesmo dia, ele move uma para outro dia livre — em várias rodadas, pois resolver um conflito libera espaço para outro.</li>
+                            <li class="mb-1"><strong>Validação de duplicidade:</strong> uma checagem final garante as 3 regras invioláveis.</li>
+                            <li class="mb-1"><strong>Sugestões coordenadas:</strong> para o que sobrar, sugere um dia específico para adicionar à disponibilidade do professor (sem repetir dias).</li>
+                        </ol>
+                    </div>
                     <div class="alert alert-info py-2 mt-2" style="font-size:12px">
                         <i class="bi bi-lightbulb me-1"></i>
-                        <strong>Conflitos:</strong> O sistema sugere dias alternativos. Se aparecer "Nenhum dia livre", verifique se o professor tem dias suficientes: mínimo 1 dia por turma vinculada.
+                        <strong>Conflitos:</strong> a mensagem mostra por que cada dia falhou. "Faltam N dias" = adicione dias ou redistribua. "IMPOSSÍVEL, 5 dias úteis" = o professor tem mais de 5 vínculos, só redistribuindo. Às vezes a sugestão de um conflito só aparece depois que você aceita os outros (cada ajuste libera espaço). O ideal é configurar a disponibilidade correta ANTES de gerar.
                     </div>
                 </div>
             </div>
@@ -336,9 +350,12 @@
             <div id="acc_grade" class="accordion-collapse collapse">
                 <div class="accordion-body pt-0" style="font-size:13px">
                     <ul class="list-unstyled">
-                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Filtros:</strong> Curso, turmas e período letivo. Selecione uma turma para imprimir individualmente</span></li>
-                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Imprimir:</strong> Gera PDF colorido com logo UniSENAI, professor, sala e informações do período</span></li>
-                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Online:</strong> Disciplinas online aparecem com ícone 🌐 sem sala física</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Filtros:</strong> curso, turmas e período letivo. Pode selecionar uma ou várias turmas (ou "Todas")</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Imprimir 1 turma:</strong> botões individuais Colorido e P&B de cada turma</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Imprimir várias turmas:</strong> botões "Imprimir todas — Colorido / P&B". Sai uma grade por página (cada turma em sua folha)</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Intervalo:</strong> a linha de intervalo aparece automaticamente entre os horários, se houver um horário do tipo "intervalo" cadastrado</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>QR Code:</strong> cada grade traz o QR para falar com a coordenação (se o telefone estiver no cadastro do curso)</span></li>
+                        <li class="mb-2 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size:12px"></i><span><strong>Online:</strong> disciplinas online aparecem destacadas, sem sala física</span></li>
                     </ul>
                 </div>
             </div>
@@ -378,6 +395,7 @@
                             <h6 class="fw-bold mb-2" style="font-size:13px">Relatório de Professores</h6>
                             <ul class="list-unstyled">
                                 <li class="mb-1 d-flex gap-2"><i class="bi bi-check text-success mt-1 flex-shrink-0"></i><span>Lista professores com disciplinas e turmas</span></li>
+                                <li class="mb-1 d-flex gap-2"><i class="bi bi-check text-success mt-1 flex-shrink-0"></i><span><strong>Filtro por disciplina:</strong> dropdown que agrupa cada disciplina uma vez, mostrando os cursos (ex.: "BANCO DE DADOS (ADS, LOG)"). Mostra só os professores e as linhas daquela disciplina</span></li>
                                 <li class="mb-1 d-flex gap-2"><i class="bi bi-check text-success mt-1 flex-shrink-0"></i><span><strong>Identificar Duplicados:</strong> encontra disciplinas com mais de 1 professor por turma</span></li>
                             </ul>
                         </div>

@@ -12,30 +12,18 @@
 
     <div class="card mb-2 border-0 shadow-sm">
         <div class="card-body py-2">
-            <div class="row g-2 align-items-center">
-                <div class="col-md-8">
-                    <div class="input-group">
-                        <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
-                            <option value="todos">Todos os campos</option>
-                            <option value="turma">Turma</option>
-                            <option value="disciplina">Disciplina</option>
-                            <option value="professor">Professor</option>
-                            <option value="sala">Sala</option>
-                            <option value="dia">Dia da semana</option>
-                        </select>
-                        <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
-                        @if($search)<button class="btn btn-outline-secondary" wire:click="$set('search', '')"><i class="bi bi-x-lg"></i></button>@endif
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <select wire:model.live="filtroPeriodo" class="form-select">
-                        <option value="">Todos os períodos letivos</option>
-                        @foreach($periodosLetivos as $periodo)
-                        <option value="{{ $periodo->id }}">{{ $periodo->nome }}{{ $periodo->ativo ? ' (ativo)' : '' }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <div class="input-group">
+                <select wire:model.live="filtro" class="form-select flex-shrink-1" style="max-width:160px;border-radius:6px 0 0 6px;border-right:none">
+                    <option value="todos">Todos os campos</option>
+                    <option value="turma">Turma</option>
+                    <option value="disciplina">Disciplina</option>
+                    <option value="professor">Professor</option>
+                    <option value="sala">Sala</option>
+                    <option value="dia">Dia da semana</option>
+                </select>
+                <span class="input-group-text bg-white px-2" style="border-left:none;border-right:none"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Digite para filtrar...">
+                @if($search)<button class="btn btn-outline-secondary" wire:click="$set('search', '')"><i class="bi bi-x-lg"></i></button>@endif
             </div>
         </div>
     </div>
@@ -319,14 +307,13 @@
 <x-help-modal titulo="Ajuda — Aulas">
 <p class="text-muted mb-3">Visualização e gerenciamento manual das aulas geradas.</p>
 <ul class="list-unstyled">
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Geração automática:</strong> as aulas são criadas pelo Gerador de Grade. Use esta tela para ajustes manuais.</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> filtre por turma, professor, sala, período letivo e dia da semana.</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Exclusão em lote:</strong> marque o checkbox do cabeçalho para selecionar a página atual. Se houver mais páginas, clique em <strong>"Selecionar todas as N (todas as páginas)"</strong> no aviso amarelo para marcar tudo de uma vez. Depois clique em <strong>Excluir</strong>.</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Modalidade:</strong> presencial ou online. Aulas online não têm sala física.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Geração automática:</strong> As aulas são criadas pelo Gerador de Grade. Use esta tela para ajustes manuais</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por turma, professor, sala, período letivo e dia da semana</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Modalidade:</strong> Presencial ou Online. Aulas online não têm sala física</li>
 </ul>
 <div class="alert alert-warning py-2 mt-2" style="font-size:12px">
     <i class="bi bi-exclamation-triangle me-1"></i>
-    Cada linha agrupa todos os horários daquela aula — ao excluir, a aula é removida por completo. Para gerar todas as aulas de uma vez, use o <strong>Gerador de Grade</strong>.
+    Para gerar todas as aulas de uma vez, use o <strong>Gerador de Grade</strong>.
 </div>
 </x-help-modal>
 </div>

@@ -26,6 +26,7 @@ class AulasCrud extends Component
     public bool $showDelete = false;
     public string $search   = '';
     public string $filtro   = 'todos';
+    public string $filtroPeriodo = ''; // filtro de período letivo na LISTAGEM
     public string $modalTitle = '';
 
     public array $dias = [
@@ -40,7 +41,7 @@ class AulasCrud extends Component
 
     public array $modalidades = ['presencial', 'online', 'híbrido'];
 
-    protected $queryString = ['search', 'filtro'];
+    protected $queryString = ['search', 'filtro', 'filtroPeriodo'];
 
     protected function rules(): array
     {
@@ -264,13 +265,32 @@ class AulasCrud extends Component
 
     public function deleteLote(): void
     {
-        \App\Models\Aula::whereIn('id', $this->selecionados)->delete();
-        $qtd = count($this->selecionados);
-        \App\Models\Log::registrar('excluiu', 'Aulas', "Exclusão em lote: {$qtd} aula(s) removida(s)");
+        // Cada item selecionado é o MIN(id) de um GRUPO (turma+disciplina+dia+...).
+        // Como cada grupo tem várias linhas (uma por horário), apagamos o GRUPO inteiro,
+        // não só o MIN(id) — senão o grupo reaparece e seria preciso excluir várias vezes.
+        $aulasBase = \App\Models\Aula::whereIn('id', $this->selecionados)->get();
+        $totalRemovidas = 0;
+        foreach ($aulasBase as $a) {
+            $totalRemovidas += \App\Models\Aula::where('turma_id', $a->turma_id)
+                ->where('disciplina_id', $a->disciplina_id)
+                ->where('professor_id', $a->professor_id)
+                ->where('dia_semana', $a->dia_semana)
+                ->where('periodo_letivo_id', $a->periodo_letivo_id)
+                ->delete();
+        }
+        $qtdGrupos = count($this->selecionados);
+        \App\Models\Log::registrar('excluiu', 'Aulas', "Exclusão em lote: {$qtdGrupos} aula(s) removida(s) ({$totalRemovidas} registro(s))");
         $this->selecionados      = [];
         $this->todosSelecionados = false;
         $this->showDeleteLote    = false;
-        session()->flash('success', "{$qtd} aula(s) excluída(s) com sucesso!");
+        session()->flash('success', "{$qtdGrupos} aula(s) excluída(s) com sucesso!");
+    }
+
+    // Seleciona TODAS as aulas (grupos) de TODAS as páginas que batem com o filtro atual
+    public function selecionarTodas(): void
+    {
+        $this->selecionados = $this->queryAgrupada()->pluck('id')->map(fn($id) => (int)$id)->toArray();
+        $this->todosSelecionados = true;
     }
 
     public function cancelarDeleteLote(): void
@@ -280,8 +300,11 @@ class AulasCrud extends Component
 
     public function updatingSearch(): void { $this->resetPage(); $this->selecionados = []; $this->todosSelecionados = false; }
     public function updatingFiltro(): void { $this->resetPage(); $this->search = ''; $this->selecionados = []; $this->todosSelecionados = false; }
+    public function updatingFiltroPeriodo(): void { $this->resetPage(); $this->selecionados = []; $this->todosSelecionados = false; }
 
-    public function render()
+    // Monta a query agrupada (1 linha por turma/disciplina/dia) respeitando o filtro atual.
+    // Usada pelo render (paginado) e pela seleção total (todas as páginas).
+    private function queryAgrupada()
     {
         $diasNomes = [1=>'Segunda',2=>'Terça',3=>'Quarta',4=>'Quinta',5=>'Sexta'];
         $diaNumero = null;
@@ -291,8 +314,8 @@ class AulasCrud extends Component
             }
         }
 
-        // Agrupa por turma+disciplina+dia — mostra 1 linha por slot de aula (não por horário)
-        $aulas = Aula::with(['turma','disciplina','professor','sala','periodoLetivo'])
+        return Aula::with(['turma','disciplina','professor','sala','periodoLetivo'])
+            ->when($this->filtroPeriodo, fn($q) => $q->where('periodo_letivo_id', $this->filtroPeriodo))
             ->when($this->search, function($q) use ($diaNumero) {
                 $s = $this->search;
                 match($this->filtro) {
@@ -311,8 +334,18 @@ class AulasCrud extends Component
                      \DB::raw('MIN(horario_id) as horario_id_min'),
                      \DB::raw('MAX(horario_id) as horario_id_max'))
             ->groupBy('turma_id','disciplina_id','professor_id','sala_id','dia_semana','periodo_letivo_id','modalidade')
-            ->orderBy('dia_semana')
-            ->paginate(20);
+            ->orderBy('dia_semana');
+    }
+
+    public function render()
+    {
+        $diasNomes = [1=>'Segunda',2=>'Terça',3=>'Quarta',4=>'Quinta',5=>'Sexta'];
+
+        // Lista agrupada e paginada (reutiliza a query base)
+        $aulas = $this->queryAgrupada()->paginate(20);
+
+        // Total de grupos em TODAS as páginas (para o botão "selecionar todas")
+        $totalGrupos = $this->queryAgrupada()->get()->count();
 
         $turmas          = Turma::where('ativo', true)->orderBy('nome')->get();
         $disciplinas     = Disciplina::where('ativo', true)->orderBy('nome')->get();
@@ -341,7 +374,7 @@ class AulasCrud extends Component
 
         return view('livewire.aulas-crud', compact(
             'aulas', 'turmas', 'disciplinas', 'salas',
-            'horarios', 'periodosLetivos', 'professoresFiltrados'
+            'horarios', 'periodosLetivos', 'professoresFiltrados', 'totalGrupos'
         ));
     }
 }

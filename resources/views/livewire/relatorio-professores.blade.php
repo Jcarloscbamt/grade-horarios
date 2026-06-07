@@ -134,7 +134,13 @@
                         @forelse($professores as $professor)
                         @php
                             $vinculos = $professor->disciplinasTurmas()->with(['disciplina.curso', 'turma'])->get();
-                            // Quando há filtro de disciplina, mostra só os vínculos daquela disciplina (por nome)
+                            // Filtra as linhas exibidas conforme os filtros ativos (curso, turma, disciplina)
+                            if ($curso_id) {
+                                $vinculos = $vinculos->filter(fn($v) => (int)($v->disciplina->curso_id ?? 0) === (int)$curso_id)->values();
+                            }
+                            if ($turma_id) {
+                                $vinculos = $vinculos->filter(fn($v) => (int)$v->turma_id === (int)$turma_id)->values();
+                            }
                             if ($disciplina_nome) {
                                 $vinculos = $vinculos->filter(fn($v) => ($v->disciplina->nome ?? '') === $disciplina_nome)->values();
                             }
@@ -142,6 +148,11 @@
                             $dispArr = is_array($disp) ? $disp : (is_string($disp) ? json_decode($disp, true) : []);
                             $dispGeral = collect($dispArr ?? [])->map(fn($d) => $dias[$d] ?? $d);
                         @endphp
+
+                        @php $temFiltro = $curso_id || $turma_id || $disciplina_nome; @endphp
+                        @if($vinculos->isEmpty() && $temFiltro)
+                            @continue
+                        @endif
 
                         @if($vinculos->isEmpty())
                         {{-- Professor sem vínculos --}}
@@ -232,11 +243,12 @@
 
 
 <x-help-modal titulo="Ajuda — Relatório de Professores">
-<p class="text-muted mb-3">Lista todos os professores com suas disciplinas e turmas vinculadas.</p>
+<p class="text-muted mb-3">Lista os professores com suas disciplinas e turmas vinculadas.</p>
 <ul class="list-unstyled">
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por nome, curso, turma ou status</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Identificar Duplicados:</strong> Clique no botão vermelho para encontrar disciplinas com mais de um professor vinculado para a mesma turma</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Exportar CSV:</strong> Gera planilha com todos os dados filtrados</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Busca por texto:</strong> procura por nome ou e-mail do professor.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtro por disciplina:</strong> use o dropdown "Todas as disciplinas". Cada disciplina aparece uma vez, com os cursos onde existe entre parênteses (ex.: "BANCO DE DADOS (ADS, LOG)"). Ao selecionar, o relatório mostra só os professores daquela disciplina e exibe apenas as linhas dela.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Identificar Duplicados:</strong> encontra disciplinas com mais de um professor vinculado para a mesma turma.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Exportar CSV:</strong> gera planilha com os dados filtrados.</li>
 </ul>
 </x-help-modal>
 </div>

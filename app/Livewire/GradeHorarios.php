@@ -2,7 +2,7 @@
 // app/Livewire/GradeHorarios.php
 namespace App\Livewire;
 
-use App\Models\{Aula, Turma, Curso, PeriodoLetivo};
+use App\Models\{Aula, Turma, Curso, PeriodoLetivo, Horario};
 use Livewire\Component;
 
 class GradeHorarios extends Component
@@ -91,13 +91,27 @@ class GradeHorarios extends Component
                     'disciplina:id,nome,tipo_sala',
                     'professor:id,nome',
                     'sala:id,nome,bloco',
-                    'horario:id,hora_inicio,hora_fim'
+                    'horario:id,hora_inicio,hora_fim,tipo'
                 ])
                 ->whereIn('turma_id', $this->turmasSelecionadas)
                 ->where('periodo_letivo_id', $this->periodo_letivo_id)
                 ->get();
 
-            $horarios = $aulas->map(fn($a) => $a->horario)
+            $horariosAula = $aulas->map(fn($a) => $a->horario)->filter()->unique('id');
+
+            // Inclui a(s) linha(s) de INTERVALO que caem DENTRO da faixa das aulas exibidas
+            // (entre o primeiro e o último horário de aula da grade)
+            $intervalos = collect();
+            if ($horariosAula->isNotEmpty()) {
+                $min = $horariosAula->min('hora_inicio');
+                $max = $horariosAula->max('hora_inicio');
+                $intervalos = Horario::where('tipo', 'intervalo')
+                    ->where('hora_inicio', '>=', $min)
+                    ->where('hora_inicio', '<=', $max)
+                    ->get();
+            }
+
+            $horarios = $horariosAula->concat($intervalos)
                 ->unique('id')->sortBy('hora_inicio')->values();
 
             foreach ($aulas as $aula) {

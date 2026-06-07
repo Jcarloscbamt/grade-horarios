@@ -7,6 +7,23 @@
         </div>
         {{-- Botões de impressão por turma selecionada --}}
         @if(!empty($turmasSelecionadas) && $periodo_letivo_id && count($grades) > 0)
+        @php $idsComGrade = collect($turmasAtivas)->filter(fn($t) => isset($grades[$t->id]))->pluck('id')->toArray(); @endphp
+
+        @if(count($idsComGrade) > 1)
+        {{-- VÁRIAS turmas: um botão para todas (colorido) e outro (P&B) — 1 grade por página --}}
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge bg-secondary align-self-center">{{ count($idsComGrade) }} turmas</span>
+            <a href="{{ route('grade.imprimir', ['turma_ids' => implode(',', $idsComGrade), 'periodo_letivo_id' => $periodo_letivo_id, 'modo' => 'colorido']) }}"
+               target="_blank" class="btn btn-secondary btn-sm">
+                <i class="bi bi-printer me-1"></i>Imprimir todas — Colorido
+            </a>
+            <a href="{{ route('grade.imprimir', ['turma_ids' => implode(',', $idsComGrade), 'periodo_letivo_id' => $periodo_letivo_id, 'modo' => 'pb']) }}"
+               target="_blank" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-file-earmark-text me-1"></i>Imprimir todas — P&B
+            </a>
+        </div>
+        @else
+        {{-- UMA turma: botões individuais (colorido + P&B) --}}
         <div class="d-flex flex-wrap gap-2">
             @foreach($turmasAtivas as $t)
             @if(isset($grades[$t->id]))
@@ -23,6 +40,7 @@
             @endif
             @endforeach
         </div>
+        @endif
         @endif
     </div>
 
@@ -297,11 +315,17 @@
 
 
 <x-help-modal titulo="Ajuda — Grade de Horários">
-<p class="text-muted mb-3">Visualização da grade de horários por turma e período letivo.</p>
+<p class="text-muted mb-3">Visualização e impressão da grade de horários por turma e período letivo.</p>
 <ul class="list-unstyled">
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> Filtre por curso, turmas e período letivo</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Imprimir:</strong> Gera PDF colorido da grade</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Online:</strong> Disciplinas online aparecem com 🌐 sem sala física</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Filtros:</strong> filtre por curso, turmas e período letivo. Pode selecionar uma ou várias turmas (ou "Todas").</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Imprimir 1 turma:</strong> aparecem os botões individuais (Colorido e P&B) de cada turma.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Imprimir várias turmas:</strong> aparecem os botões "Imprimir todas — Colorido" e "Imprimir todas — P&B". Na impressão, sai <strong>uma grade por página</strong> (cada turma em sua folha).</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Intervalo:</strong> a linha de intervalo aparece automaticamente entre os horários de aula, se houver um horário do tipo "intervalo" cadastrado.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Online:</strong> disciplinas online aparecem destacadas, sem sala física.</li>
 </ul>
+<div class="alert alert-info py-2 mt-2" style="font-size:12px">
+    <i class="bi bi-lightbulb me-1"></i>
+    Cada grade impressa traz o QR code para falar com a coordenação do curso (se o telefone estiver cadastrado no curso).
+</div>
 </x-help-modal>
 </div>

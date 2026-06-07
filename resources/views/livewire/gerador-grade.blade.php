@@ -383,25 +383,98 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" style="font-size:14px">
-                    <p class="text-muted mb-3">Gera automaticamente a grade de horários com base nos vínculos professor-disciplina.</p>
+                    <p class="text-muted mb-3">O Gerador monta a grade automaticamente a partir dos <strong>vínculos</strong> (professor + disciplina + turma) cadastrados. Esta ajuda explica o passo a passo, as regras, e — principalmente — <strong>o que acontece quando dá conflito</strong>.</p>
+
+                    {{-- COMO USAR --}}
+                    <h6 class="fw-bold mt-3"><i class="bi bi-1-circle-fill text-danger me-1"></i>Como usar</h6>
                     <ol class="mb-3">
-                        <li class="mb-2">Selecione o <strong>Curso</strong> (opcional, para filtrar turmas)</li>
-                        <li class="mb-2">Selecione o <strong>Período Letivo</strong></li>
-                        <li class="mb-2">Selecione as <strong>Turmas</strong></li>
-                        <li class="mb-2">Clique em <strong>Gerar Prévia</strong> e revise antes de salvar</li>
-                        <li class="mb-2">Clique em <strong>Salvar Grade</strong></li>
+                        <li class="mb-1">Selecione o <strong>Curso</strong> (opcional, filtra as turmas)</li>
+                        <li class="mb-1">Selecione o <strong>Período Letivo</strong></li>
+                        <li class="mb-1">Selecione as <strong>Turmas</strong></li>
+                        <li class="mb-1">Clique em <strong>Gerar Prévia</strong> e revise</li>
+                        <li class="mb-1">Se houver mais de um professor para a mesma disciplina, aparece uma <strong>tela de seleção</strong> para você escolher qual leciona</li>
+                        <li class="mb-1">Clique em <strong>Salvar Grade</strong></li>
                     </ol>
+
                     <hr>
-                    <p class="fw-semibold mb-2">Regras automáticas:</p>
-                    <ul class="list-unstyled">
-                        <li class="mb-1"><i class="bi bi-shield-check text-success me-1"></i>Professor não pode ter aulas em turmas diferentes no mesmo dia</li>
-                        <li class="mb-1"><i class="bi bi-shield-check text-success me-1"></i>Disciplinas filtradas pelo semestre atual da turma</li>
-                        <li class="mb-1"><i class="bi bi-shield-check text-success me-1"></i>Cada disciplina aparece no máximo uma vez por semana</li>
-                        <li class="mb-1"><i class="bi bi-shield-check text-success me-1"></i>Salas alocadas por tipo e bloco preferencial</li>
+
+                    {{-- A REGRA DE OURO --}}
+                    <h6 class="fw-bold"><i class="bi bi-key-fill text-warning me-1"></i>A regra que explica tudo</h6>
+                    <div class="alert alert-light border py-2" style="font-size:13px">
+                        Cada <strong>vínculo</strong> (uma disciplina numa turma) vira <strong>1 aula</strong>, e cada aula ocupa <strong>1 dia</strong> da semana do professor.
+                        Como a semana tem <strong>5 dias úteis</strong> e o professor dá no máximo 1 aula por dia, um professor pode ter no máximo <strong>5 vínculos</strong>.
+                        <div class="mt-2 mb-0">Exemplo: se um professor tem 4 disciplinas para dar, ele precisa de pelo menos 4 dias livres na disponibilidade. Com só 2 dias, é fisicamente impossível — faltam dias.</div>
+                    </div>
+
+                    <hr>
+
+                    {{-- COMO O GERADOR PENSA --}}
+                    <h6 class="fw-bold"><i class="bi bi-gear-fill text-secondary me-1"></i>Como o gerador monta a grade (em etapas)</h6>
+                    <p class="mb-2" style="font-size:13px">Ele não tenta de qualquer jeito — segue uma ordem inteligente:</p>
+                    <ul style="font-size:13px">
+                        <li class="mb-2"><strong>1. Começa pelos mais difíceis (Escassez / MRV):</strong> professores com menos dias disponíveis são alocados primeiro, porque têm menos opções. É como montar um quebra-cabeça começando pelas peças que só encaixam num lugar.</li>
+                        <li class="mb-2"><strong>2. Distribui as aulas de cada professor (1 por dia):</strong> garante que o professor nunca fique em duas turmas no mesmo dia.</li>
+                        <li class="mb-2"><strong>3. Conserta conflitos automaticamente (reparo global):</strong> se duas aulas brigam pelo mesmo dia, o gerador tenta <em>mover</em> uma delas para outro dia livre — e faz isso em várias rodadas, porque resolver um conflito costuma liberar espaço para resolver outro.</li>
+                        <li class="mb-2"><strong>4. Confere se não há duplicidade:</strong> uma verificação final garante as 3 regras invioláveis (abaixo).</li>
+                        <li class="mb-2"><strong>5. Sugere soluções para o que sobrou:</strong> para cada conflito que não deu para resolver sozinho, ele sugere um dia específico para adicionar à disponibilidade do professor.</li>
                     </ul>
-                    <div class="alert alert-warning py-2 mt-3" style="font-size:12px">
+                    <p class="text-muted" style="font-size:12px">Obs.: o gerador faz várias tentativas com estratégias diferentes e fica com a melhor (a que tem menos conflitos).</p>
+
+                    <hr>
+
+                    {{-- AS 3 REGRAS --}}
+                    <h6 class="fw-bold"><i class="bi bi-shield-check text-success me-1"></i>As 3 regras que nunca são quebradas</h6>
+                    <ul class="list-unstyled" style="font-size:13px">
+                        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Um <strong>professor</strong> não pode estar em duas turmas no mesmo dia</li>
+                        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Uma <strong>turma</strong> não pode ter duas disciplinas no mesmo dia</li>
+                        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Uma <strong>sala</strong> não pode ser usada por duas turmas ao mesmo tempo</li>
+                    </ul>
+                    <p class="text-muted" style="font-size:12px">Disciplinas são filtradas pelo semestre da turma; salas são alocadas por tipo e bloco preferencial.</p>
+
+                    <hr>
+
+                    {{-- QUANDO DÁ ERRO --}}
+                    <h6 class="fw-bold"><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Quando aparece conflito — o que significa</h6>
+                    <p class="mb-2" style="font-size:13px">A mensagem mostra <strong>por que cada dia falhou</strong>. Os casos mais comuns:</p>
+
+                    <div class="border-start border-3 border-warning ps-2 mb-2" style="font-size:13px">
+                        <strong>"Faltam N dias — adicione mais dias ou redistribua"</strong><br>
+                        O professor tem mais disciplinas do que dias disponíveis. Ex.: 4 disciplinas, 2 dias → faltam 2 dias.
+                        <div class="text-muted">Solução: adicione dias na disponibilidade dele (cadastro) ou passe alguma disciplina para outro professor.</div>
+                    </div>
+
+                    <div class="border-start border-3 border-danger ps-2 mb-2" style="font-size:13px">
+                        <strong>"IMPOSSÍVEL — a semana só tem 5 dias úteis"</strong><br>
+                        O professor tem mais de 5 vínculos. Não há 6º dia na semana.
+                        <div class="text-muted">Solução: a única saída é redistribuir disciplinas para outro professor.</div>
+                    </div>
+
+                    <div class="border-start border-3 border-secondary ps-2 mb-2" style="font-size:13px">
+                        <strong>"Não há combinação de dias possível"</strong><br>
+                        Os dias do professor estão todos tomados por outras turmas naquele momento.
+                        <div class="text-muted">Solução: o gerador normalmente sugere um dia novo para adicionar (botão abaixo do conflito).</div>
+                    </div>
+
+                    <hr>
+
+                    {{-- SUGESTÕES --}}
+                    <h6 class="fw-bold"><i class="bi bi-lightbulb-fill text-warning me-1"></i>Aceitar sugestão de dia</h6>
+                    <p style="font-size:13px">Quando o gerador sugere <strong>"+ TER"</strong> (por exemplo), significa: "se este professor passar a atender às terças, o conflito some". Ao clicar em <strong>Adicionar dia e regerar</strong>:</p>
+                    <ul style="font-size:13px">
+                        <li class="mb-1">O dia é <strong>gravado permanentemente</strong> na disponibilidade do professor (no cadastro)</li>
+                        <li class="mb-1">A grade é recalculada automaticamente</li>
+                    </ul>
+                    <div class="alert alert-info py-2" style="font-size:12px">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>Dica importante:</strong> às vezes um conflito não mostra botão de sugestão na hora, mas aparece depois que você aceita os outros — porque cada ajuste libera espaço novo. Se um professor está muito sobrecarregado, o melhor é <strong>configurar a disponibilidade correta ANTES de gerar</strong> (dias ≥ número de disciplinas), em vez de aceitar sugestões uma a uma.
+                    </div>
+
+                    <hr>
+
+                    {{-- PRE-REQUISITOS --}}
+                    <div class="alert alert-warning py-2 mt-2" style="font-size:12px">
                         <i class="bi bi-exclamation-triangle me-1"></i>
-                        <strong>Pré-requisitos:</strong> Professores com vínculos, horários, salas e período letivo ativo.
+                        <strong>Pré-requisitos:</strong> professores com vínculos cadastrados, disponibilidade definida, horários e salas cadastrados, e um período letivo selecionado.
                     </div>
                 </div>
                 <div class="modal-footer py-2">

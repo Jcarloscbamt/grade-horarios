@@ -127,16 +127,19 @@
 
                     @if(count($previewConcluidas) > 0)
                     <div>
-                        <h6 class="fw-bold text-muted mb-2">
+                        <h6 class="fw-bold text-danger mb-2">
                             <i class="bi bi-mortarboard me-1"></i>
-                            {{ count($previewConcluidas) }} turma(s) já estão no último semestre (não serão alteradas):
+                            {{ count($previewConcluidas) }} turma(s) concluíram o curso e serão INATIVADAS:
                         </h6>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach($previewConcluidas as $item)
-                            <span class="badge bg-light text-dark border" style="font-size:12px">
-                                {{ $item['nome'] }} — {{ $item['semestre'] }}º sem (concluído)
+                            <span class="badge bg-danger-subtle text-danger border border-danger" style="font-size:12px">
+                                {{ $item['nome'] }} — {{ $item['semestre'] }}º sem (último)
                             </span>
                             @endforeach
+                        </div>
+                        <div class="text-muted mt-2" style="font-size:12px">
+                            <i class="bi bi-info-circle me-1"></i>Elas deixarão de aparecer no Gerador e na Grade. Você pode reativá-las depois na tela de Turmas, se necessário.
                         </div>
                     </div>
                     @endif
@@ -144,11 +147,13 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" wire:click="cancelarAvanco">Cancelar</button>
-                    @if(count($previewAvanco) > 0)
+                    @if(count($previewAvanco) > 0 || count($previewConcluidas) > 0)
                     <button type="button" class="btn btn-warning" wire:click="confirmarAvanco" wire:loading.attr="disabled">
                         <span wire:loading wire:target="confirmarAvanco" class="spinner-border spinner-border-sm me-1"></span>
                         <i wire:loading.remove wire:target="confirmarAvanco" class="bi bi-arrow-up-circle me-1"></i>
-                        Confirmar Avanço de {{ count($previewAvanco) }} Turma(s)
+                        Confirmar
+                        @if(count($previewAvanco) > 0)Avanço de {{ count($previewAvanco) }} turma(s)@endif
+                        @if(count($previewConcluidas) > 0) e Inativar {{ count($previewConcluidas) }}@endif
                     </button>
                     @endif
                 </div>
@@ -246,13 +251,26 @@
 <x-help-modal titulo="Ajuda — Períodos Letivos">
 <p class="text-muted mb-3">Define os semestres letivos do ano com datas de avaliação.</p>
 <ul class="list-unstyled">
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Período Ativo:</strong> Apenas um período pode estar ativo por vez. O Gerador usa o período ativo por padrão</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Avançar Semestre:</strong> Ao iniciar um novo período, clique em "Avançar Semestre das Turmas" para incrementar o semestre de todas as turmas ativas automaticamente</li>
-    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Datas de Avaliação:</strong> Aparecem no rodapé da grade impressa</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Período Ativo:</strong> apenas um período fica ativo por vez. Os e-mails usam o ativo; no Gerador você escolhe qual período gerar.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Avançar Semestre:</strong> incrementa o semestre de todas as turmas ativas (1º→2º, etc.). É isso que define quais disciplinas o Gerador vai usar.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Turmas formadas:</strong> turmas que chegaram ao último semestre do curso são <strong>inativadas automaticamente</strong> ao avançar — deixam de aparecer no Gerador e na Grade. Dá para reativar na tela de Turmas se precisar.</li>
+    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Datas de Avaliação:</strong> aparecem no rodapé da grade impressa.</li>
 </ul>
-<div class="alert alert-info py-2 mt-2" style="font-size:12px">
-    <i class="bi bi-lightbulb me-1"></i>
-    Fluxo correto: Criar período → Ativar → Avançar semestres → Gerar grades.
+
+<hr>
+
+<h6 class="fw-bold"><i class="bi bi-arrow-right-circle text-danger me-1"></i>Fluxo recomendado para a virada de semestre</h6>
+<ol class="ps-3" style="font-size:13px">
+    <li class="mb-1">Crie o <strong>novo período</strong> e deixe-o <strong>INATIVO</strong> por enquanto</li>
+    <li class="mb-1">Clique em <strong>Avançar Semestre das Turmas</strong> (sobe as que continuam, inativa as formadas)</li>
+    <li class="mb-1">Ajuste os <strong>vínculos</strong> dos professores que mudaram no novo semestre</li>
+    <li class="mb-1">No <strong>Gerador</strong>, selecione o novo período, gere e <strong>confira</strong> a grade</li>
+    <li class="mb-1">Só então <strong>ative o novo período</strong> (isso desativa o anterior automaticamente)</li>
+</ol>
+
+<div class="alert alert-warning py-2" style="font-size:12px">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    <strong>Importante:</strong> avance o semestre <u>antes</u> de gerar a nova grade (senão o Gerador pega as disciplinas do semestre antigo). A grade já salva do período anterior <u>não muda</u> ao avançar — ela fica presa ao período em que foi gerada. Dica: se precisar do registro impresso da grade antiga com o número de semestre correto, imprima-a antes de avançar (o cabeçalho mostra o semestre atual da turma).
 </div>
 </x-help-modal>
 </div>

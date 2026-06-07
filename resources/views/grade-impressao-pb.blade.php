@@ -3,12 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade de Horários (P&B) — {{ $turma->nome }}</title>
-    @php
-        $telefoneCoord = $turma->curso->telefone_coord ?? '';
-        $telefoneLimpo = preg_replace('/\D/', '', $telefoneCoord);
-        $whatsappLink  = $telefoneLimpo ? "https://wa.me/55{$telefoneLimpo}" : '';
-    @endphp
+    <title>Grade de Horários (P&B){{ count($turmasData) === 1 ? ' — '.$turmasData[0]['turma']->nome : '' }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -168,12 +163,23 @@
             .btn-imprimir { display: none !important; }
             body { padding: 5px; }
         }
+        /* Uma turma por página na impressão */
+        .pagina-turma { page-break-after: always; }
+        .pagina-turma:last-child { page-break-after: auto; }
     </style>
 </head>
 <body>
 
 <button class="btn-imprimir" onclick="window.print()">&#128424; Imprimir / Salvar PDF</button>
 
+@foreach($turmasData as $td)
+@php
+    $turma        = $td['turma'];
+    $horarios     = $td['horarios'];
+    $grade        = $td['grade'];
+    $whatsappLink = $td['whatsappLink'];
+@endphp
+<div class="pagina-turma">
 {{-- Cabeçalho --}}
 <div class="header-grade">
     <div>
@@ -292,7 +298,7 @@
     {{-- QR Code P&B — gerado no navegador --}}
     @if($whatsappLink)
     <div class="info-bloco-qr">
-        <div id="qrcode" data-link="{{ $whatsappLink }}"
+        <div id="qrcode-{{ $turma->id }}" class="qrcode-box" data-link="{{ $whatsappLink }}"
              style="width:86px;height:86px;border:2px solid #000;border-radius:3px;line-height:0;background:#fff"></div>
         <div style="font-size:9px;font-weight:bold;margin-top:4px;text-align:center;color:#000;line-height:1.4">
             &#9742; Fale com a<br>Coordenação
@@ -303,12 +309,15 @@
 </div>
 @endif
 @endif
+</div>{{-- /pagina-turma --}}
+@endforeach
 
 <script src="{{ asset('js/qrcode.min.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var el = document.getElementById('qrcode');
-        if (el && el.dataset.link && typeof qrcode !== 'undefined') {
+        if (typeof qrcode === 'undefined') return;
+        document.querySelectorAll('.qrcode-box').forEach(function(el) {
+            if (!el.dataset.link) return;
             try {
                 var qr = qrcode(0, 'M');
                 qr.addData(el.dataset.link);
@@ -317,7 +326,7 @@
                 var svg = el.querySelector('svg');
                 if (svg) { svg.style.width = '80px'; svg.style.height = '80px'; }
             } catch (e) { console.warn('QR:', e); }
-        }
+        });
     });
 </script>
 </body>

@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Grade de Horários — {{ $turma->nome }}</title>
+    <title>Grade de Horários{{ count($turmasData) === 1 ? ' — '.$turmasData[0]['turma']->nome : '' }}</title>
     @php
-        $cor = $turma->curso->cor_grade ?? '#E30613';
+        // Cor global do documento (CSS é único): usa a cor do curso da 1ª turma
+        $cor = $turmasData[0]['turma']->curso->cor_grade ?? '#E30613';
         $hex = ltrim($cor, '#');
         $r = hexdec(substr($hex,0,2));
         $g = hexdec(substr($hex,2,2));
@@ -196,6 +197,9 @@
             .btn-imprimir { display: none !important; }
             body { padding: 5px; }
         }
+        /* Uma turma por página na impressão */
+        .pagina-turma { page-break-after: always; }
+        .pagina-turma:last-child { page-break-after: auto; }
     </style>
 
 </head>
@@ -203,6 +207,14 @@
 
 <button class="btn-imprimir" id="btnImprimir" onclick="window.print()">&#128424; Imprimir / Salvar PDF</button>
 
+@foreach($turmasData as $td)
+@php
+    $turma        = $td['turma'];
+    $horarios     = $td['horarios'];
+    $grade        = $td['grade'];
+    $whatsappLink = $td['whatsappLink'];
+@endphp
+<div class="pagina-turma">
 <div class="header-grade">
     <div>
         @if($logoBase64)
@@ -328,7 +340,7 @@
     {{-- Bloco 3: QR Code gerado no NAVEGADOR (JavaScript) --}}
     @if($whatsappLink)
     <div style="background:{{ $corEscura }};padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:110px">
-        <div id="qrcode" data-link="{{ $whatsappLink }}"
+        <div id="qrcode-{{ $turma->id }}" class="qrcode-box" data-link="{{ $whatsappLink }}"
              style="background:white;padding:3px;border-radius:4px;width:90px;height:90px;line-height:0"></div>
         <div style="color:white;font-size:9px;font-weight:bold;margin-top:4px;text-align:center;line-height:1.4">
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="white" style="vertical-align:middle"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -340,26 +352,27 @@
 </div>
 @endif
 @endif
+</div>{{-- /pagina-turma --}}
+@endforeach
 
 <script src="{{ asset('js/qrcode.min.js') }}"></script>
 <script>
-    // Gera o QR code no navegador (instantâneo, sem travar o PHP)
+    // Gera o QR code de TODAS as turmas no navegador (instantâneo, sem travar o PHP)
     document.addEventListener('DOMContentLoaded', function() {
-        var el = document.getElementById('qrcode');
-        if (el && el.dataset.link && typeof qrcode !== 'undefined') {
+        if (typeof qrcode === 'undefined') return;
+        document.querySelectorAll('.qrcode-box').forEach(function(el) {
+            if (!el.dataset.link) return;
             try {
-                var qr = qrcode(0, 'M');          // tipo automático, correção média
+                var qr = qrcode(0, 'M');
                 qr.addData(el.dataset.link);
                 qr.make();
-                // SVG escala melhor na impressão que <img>
                 el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0 });
                 var svg = el.querySelector('svg');
                 if (svg) { svg.style.width = '84px'; svg.style.height = '84px'; }
             } catch (e) { console.warn('QR:', e); }
-        }
+        });
     });
 
-    // NÃO auto-imprime — a grade aparece instantânea; usuário clica Imprimir quando quiser.
     window.addEventListener('beforeprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='none'; });
     window.addEventListener('afterprint', function() { var b=document.getElementById('btnImprimir'); if(b) b.style.display='block'; });
 </script>
