@@ -88,7 +88,7 @@
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); width: 240px; }
     .sidebar.mobile-open { transform: translateX(0); }
-    .sidebar-overlay { display: block !important; }
+    /*.sidebar-overlay { display: block !important; }*/
 }
 
 .sidebar-overlay {
