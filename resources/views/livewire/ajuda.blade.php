@@ -433,6 +433,8 @@
                             <ul class="list-unstyled">
                                 <li class="mb-1 d-flex gap-2"><i class="bi bi-check text-success mt-1 flex-shrink-0"></i><span>Registra todas as ações: criou, editou, excluiu</span></li>
                                 <li class="mb-1 d-flex gap-2"><i class="bi bi-check text-success mt-1 flex-shrink-0"></i><span>Mostra usuário, módulo, IP e data/hora</span></li>
+                                <li class="mb-1 d-flex gap-2"><i class="bi bi-trash text-danger mt-1 flex-shrink-0"></i><span><strong>Limpeza de logs:</strong> escolha por quantos dias manter (15 dias a 1 ano, ou "nunca apagar"). "Apagar antigos agora" remove na hora os registros mais velhos que esse período; a "Limpeza automática diária" faz isso sozinha de madrugada, usando o mesmo período.</span></li>
+                                <li class="mb-1 d-flex gap-2"><i class="bi bi-info-circle text-primary mt-1 flex-shrink-0"></i><span>A limpeza vale para todos os logs: ações do sistema, histórico de e-mail e de WhatsApp. Útil para o banco não crescer demais. É permanente — mantenha backups.</span></li>
                             </ul>
                         </div>
                     </div>

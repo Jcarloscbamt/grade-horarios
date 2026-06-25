@@ -13,7 +13,9 @@ Sistema web para geração e gerenciamento automático de grades de horários ac
 - [Requisitos](#requisitos)
 - [Instalação](#instalação)
 - [Configuração de e-mail](#configuração-de-e-mail)
+- [Notificações por WhatsApp](#notificações-por-whatsapp)
 - [Agendador de tarefas (scheduler)](#agendador-de-tarefas-scheduler)
+- [Logs e limpeza automática](#logs-e-limpeza-automática)
 - [Perfis e permissões](#perfis-e-permissões)
 - [Como o gerador de grade funciona](#como-o-gerador-de-grade-funciona)
 - [Conceitos importantes](#conceitos-importantes)
@@ -36,7 +38,7 @@ O coordenador cadastra cursos, turmas, disciplinas, professores (com suas compet
 - **Cadastros completos** — cursos, turmas, disciplinas, professores, salas, horários e períodos letivos.
 - **Professores em dois níveis** — *competências* (disciplinas que sabe lecionar, sem limite) e *vínculos do período* (turmas que vai lecionar, máximo 5, pois a semana tem 5 dias úteis).
 - **Impressão da grade** — colorida ou P&B, uma turma por página, com cabeçalho institucional, intervalo e QR Code de contato da coordenação.
-- **Avisos por e-mail** — envio automático diário (aulas do dia seguinte) e resumo semanal aos professores, com horários configuráveis e histórico de envios.
+- **Avisos por e-mail e WhatsApp** — envio automático diário (aulas do dia seguinte) e resumo semanal aos professores, com horários configuráveis, liga/desliga independente por canal e histórico de envios.
 - **Relatórios** — relatório de professores com filtros por curso, turma e disciplina; identificação de disciplinas com mais de um professor por turma.
 - **Períodos letivos** — múltiplos períodos coexistem; avanço de semestre das turmas em lote, com inativação automática das turmas que concluíram o curso.
 - **Controle de acesso** — perfis admin, coordenador e consulta (Spatie Permission).
@@ -173,6 +175,69 @@ Os horários, a ativação dos envios e o histórico ficam na tela **Envio de E-
 
 ---
 
+## Notificações por WhatsApp
+
+Além do e-mail, o sistema pode avisar os professores por **WhatsApp**. Há suporte a **dois provedores**, escolhidos numa tela (menu Administração → Provedor de WhatsApp), sem mexer em código:
+
+- **Meta Cloud API** — oficial, mais barata, mas exige verificação da empresa (CNPJ) para entregar no Brasil.
+- **Twilio** — parceiro oficial (BSP) com um Sandbox que permite testar a entrega real no Brasil sem CNPJ.
+
+Os canais e-mail/WhatsApp convivem: a mesma lógica monta as aulas e cada canal liga/desliga de forma independente na tela de Envio de E-mails (com o mesmo horário).
+
+### Configuração
+
+As credenciais ficam na **tela de Provedor de WhatsApp** (tokens criptografados no banco). A configuração da Meta também pode vir do `.env` como fallback:
+
+```env
+WHATSAPP_ENABLED=true
+WHATSAPP_TOKEN=token_da_meta
+WHATSAPP_PHONE_ID=id_do_numero
+WHATSAPP_API_VERSION=v25.0
+WHATSAPP_MODE=text              # 'text' para testes, 'template' para produção
+WHATSAPP_DEFAULT_COUNTRY=55
+```
+
+### Mensagem enviada
+
+O texto é formatado para o WhatsApp (negrito, emojis), com cabeçalho, uma seção por aula (disciplina, horário, sala e turma) e rodapé com o total. Exemplo de lembrete diário:
+
+```
+👋 Olá, *Color*!
+🔔 Lembrete das suas aulas de *Quarta (24/06)*:
+━━━━━━━━━━━━━━━
+📚 *Empreendedorismo - 1*
+🕐 18:45 - 22:00   |   📍 SALA A07
+👥 Turma: ADS26/1
+━━━━━━━━━━━━━━━
+✅ _1 aula programada_
+_UniSENAI MT — Grade de Horários_
+```
+
+### Pontos importantes
+
+- O número é normalizado automaticamente. No Twilio, a **regra do 9º dígito** brasileiro é aplicada (DDDs ≥ 28, como o 65, usam o número sem o 9).
+- No **Twilio Sandbox**, cada destinatário precisa enviar `join <código>` uma vez ao número do Twilio antes de receber.
+- Em **produção** (Meta ou Twilio), mensagens proativas exigem **template aprovado**. Na Meta, também é preciso a **verificação da empresa** (sem ela, erro 130497 bloqueia o Brasil).
+- Custo de referência: Meta ~R$ 0,04–0,05/msg; Twilio ~US$ 0,005/msg + taxa da Meta.
+
+Teste pelo terminal:
+
+```bash
+php artisan avisos:aulas --so-whatsapp --forcar
+```
+
+## Logs e limpeza automática
+
+O sistema mantém três tipos de registro: o **log de ações** (auditoria de quem criou/editou/excluiu), o **histórico de e-mail** e o **histórico de WhatsApp**.
+
+Para o banco não crescer indefinidamente, a tela de **Logs** permite definir por quanto tempo manter os registros (de 15 dias a 1 ano, ou "nunca apagar"). Há um botão para apagar os antigos na hora e uma opção de **limpeza automática diária** (executada pelo agendador de madrugada). A configuração vale para os três tipos de log.
+
+Limpeza manual pelo terminal:
+
+```bash
+php artisan logs:limpar --dias=60 --forcar
+```
+
 ## Agendador de tarefas (scheduler)
 
 Para os e-mails saírem automaticamente nos horários configurados, o agendador do Laravel precisa rodar a cada minuto. A lógica já está em `routes/console.php` — basta executar o `schedule:run` continuamente.
@@ -188,6 +253,8 @@ crontab -e
 ```
 
 **Windows:** crie uma tarefa no Agendador de Tarefas que execute `php artisan schedule:run` a cada minuto (detalhado no manual de instalação).
+
+O mesmo agendador também executa a limpeza automática de logs (quando ativada) e dispara o WhatsApp junto com o e-mail.
 
 | Tipo    | O que envia            | Quando                                             |
 |---------|------------------------|----------------------------------------------------|

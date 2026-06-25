@@ -18,12 +18,14 @@ class EnviarAvisoAulas
      * @param string $tipo  diario | semanal | manual (para o histórico)
      * @return bool  enviou ou não
      */
-    public function enviarParaProfessor(Professor $professor, bool $semanal, ?int $diaAlvo = null, string $tipo = 'manual'): bool
+    /**
+     * Monta os dados das aulas de um professor (reutilizável por e-mail E WhatsApp).
+     * @return array{aulas: array, titulo: string}|null  null = sem aulas
+     */
+    public function montarDadosProfessor(Professor $professor, bool $semanal, ?int $diaAlvo = null): ?array
     {
-        if (empty($professor->email)) return false;
-
         $periodo = PeriodoLetivo::where('ativo', true)->first();
-        if (!$periodo) return false;
+        if (!$periodo) return null;
 
         $query = Aula::with(['disciplina:id,nome', 'turma:id,nome', 'sala:id,nome', 'horario:id,hora_inicio,hora_fim'])
             ->where('professor_id', $professor->id)
@@ -34,7 +36,7 @@ class EnviarAvisoAulas
         }
 
         $aulasRaw = $query->get();
-        if ($aulasRaw->isEmpty()) return false; // sem aula = não envia (não registra)
+        if ($aulasRaw->isEmpty()) return null; // sem aula = não envia
 
         // Agrupa por turma+disciplina+dia (uma linha por aula, não por horário)
         $agrupado = $aulasRaw->groupBy(fn($a) => $a->turma_id.'_'.$a->disciplina_id.'_'.$a->dia_semana);
@@ -59,6 +61,26 @@ class EnviarAvisoAulas
         $titulo = $semanal
             ? 'esta semana'
             : ($this->nomeDias[$diaAlvo] ?? 'amanhã') . ' (' . Carbon::now()->next($diaAlvo)->format('d/m') . ')';
+
+        return ['aulas' => $aulas, 'titulo' => $titulo];
+    }
+
+    /**
+     * Envia aviso para um professor específico.
+     * @param bool $semanal  true = todas as aulas da semana; false = só o dia alvo
+     * @param int|null $diaAlvo  dia da semana (1-5) quando não é semanal
+     * @param string $tipo  diario | semanal | manual (para o histórico)
+     * @return bool  enviou ou não
+     */
+    public function enviarParaProfessor(Professor $professor, bool $semanal, ?int $diaAlvo = null, string $tipo = 'manual'): bool
+    {
+        if (empty($professor->email)) return false;
+
+        $dados = $this->montarDadosProfessor($professor, $semanal, $diaAlvo);
+        if ($dados === null) return false; // sem aula = não envia (não registra)
+
+        $aulas  = $dados['aulas'];
+        $titulo = $dados['titulo'];
 
         // Tenta enviar e REGISTRA o resultado no histórico
         try {

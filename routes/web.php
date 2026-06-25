@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GradeImpressaoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TrocarSenhaController;
+use App\Livewire\ConfigWhatsappProvider;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -59,6 +60,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/envio-emails', \App\Livewire\EnvioEmails::class)->middleware('role:admin')->name('envio-emails');
     
     Route::get('/ajuda', \App\Livewire\Ajuda::class)->name('ajuda');
+
+    Route::get('/whatsapp/config', ConfigWhatsappProvider::class)
+    ->name('whatsapp.config')
+    ->middleware(['auth']);
 
 });
 

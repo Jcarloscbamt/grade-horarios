@@ -23,7 +23,6 @@
 }
 .topbar-brand img { height: 32px; filter: brightness(0) invert(1); }
 .topbar-brand span { color: #E30613; }
-
 .topbar-toggle {
     background: none; border: none; color: #aaa;
     font-size: 20px; cursor: pointer; padding: 4px 8px;
@@ -31,7 +30,6 @@
     flex-shrink: 0;
 }
 .topbar-toggle:hover { background: #333; color: white; }
-
 .topbar-right {
     margin-left: auto;
     display: flex; align-items: center; gap: 8px;
@@ -65,7 +63,6 @@
 }
 .topbar-dropdown a:hover, .topbar-dropdown button:hover { background: #3a3a3a; color: white; }
 .topbar-dropdown hr { border-color: #3a3a3a; margin: 4px 0; }
-
 /* ═══════════════════════════════════════════════════
    SIDEBAR LATERAL
 ═══════════════════════════════════════════════════ */
@@ -83,21 +80,18 @@
     scrollbar-color: #333 transparent;
 }
 .sidebar.collapsed { width: 60px; }
-
 /* Mobile: sidebar esconde e desliza */
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); width: 240px; }
     .sidebar.mobile-open { transform: translateX(0); }
     /*.sidebar-overlay { display: block !important; }*/
 }
-
 .sidebar-overlay {
     display: none;
     position: fixed; inset: 0;
     background: rgba(0,0,0,.5);
     z-index: 1029;
 }
-
 .sidebar-section {
     padding: 8px 0;
     border-bottom: 1px solid #2a2a2a;
@@ -110,7 +104,6 @@
     transition: opacity .2s;
 }
 .sidebar.collapsed .sidebar-label { opacity: 0; }
-
 .sidebar-link {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 16px;
@@ -125,7 +118,6 @@
 .sidebar-link:hover { background: #2a2a2a; color: white; }
 .sidebar-link.active { background: #E30613 !important; color: white !important; }
 .sidebar-link.active i { color: white !important; }
-
 /* Tooltip quando collapsed */
 .sidebar.collapsed .sidebar-link::after {
     content: attr(data-tooltip);
@@ -137,7 +129,6 @@
     transition: opacity .15s;
 }
 .sidebar.collapsed .sidebar-link:hover::after { opacity: 1; }
-
 /* Submenu */
 .sidebar-submenu { padding-left: 0; }
 .sidebar-submenu .sidebar-link {
@@ -160,7 +151,6 @@
 .sidebar-group-toggle span { transition: opacity .2s; }
 .sidebar.collapsed .sidebar-group-toggle span,
 .sidebar.collapsed .sidebar-group-toggle .chevron { opacity: 0; width: 0; }
-
 /* ═══════════════════════════════════════════════════
    MAIN CONTENT OFFSET
 ═══════════════════════════════════════════════════ */
@@ -178,7 +168,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
     body.sidebar-collapsed .main-wrapper { margin-left: 0 !important; }
 }
 </style>
-
 {{-- ═══ TOPBAR ═══ --}}
 <div class="topbar">
     <button class="topbar-toggle" id="sidebarToggle" title="Recolher menu">
@@ -189,7 +178,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
              onerror="this.style.display='none'">
         Uni<span>SENAI</span>
     </a>
-
     <div class="topbar-right">
         <div class="topbar-user" id="userMenuToggle">
             <div class="topbar-avatar">
@@ -204,7 +192,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
                 <span class="badge bg-secondary" style="font-size:10px">Consulta</span>
             @endif
             <i class="bi bi-chevron-down" style="font-size:11px;color:#aaa"></i>
-
             <div class="topbar-dropdown" id="userDropdown">
                 <a href="{{ route('profile.edit') }}">
                     <i class="bi bi-person" style="color:#E30613"></i>Meu Perfil
@@ -220,13 +207,10 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
         </div>
     </div>
 </div>
-
 {{-- ═══ OVERLAY MOBILE ═══ --}}
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
 {{-- ═══ SIDEBAR ═══ --}}
 <nav class="sidebar" id="sidebar">
-
     {{-- Principal --}}
     <div class="sidebar-section">
         <div class="sidebar-label">Principal</div>
@@ -243,7 +227,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
             <i class="bi bi-magic"></i><span>Gerador de Grade</span>
         </a>
     </div>
-
     {{-- Cadastros --}}
     <div class="sidebar-section">
         <div class="sidebar-label">Cadastros</div>
@@ -274,7 +257,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
             </a>
         </div>
     </div>
-
     {{-- Relatórios --}}
     <div class="sidebar-section">
         <div class="sidebar-label">Relatórios</div>
@@ -293,7 +275,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
             </a>
         </div>
     </div>
-
     {{-- Configurações --}}
     <div class="sidebar-section">
         <div class="sidebar-label">Configurações</div>
@@ -312,7 +293,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
         </a>
         @endhasrole
     </div>
-
     {{-- Admin --}}
     {{-- Ajuda --}}
     <div class="sidebar-section">
@@ -321,7 +301,6 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
             <i class="bi bi-question-circle"></i><span>Manual / Ajuda</span>
         </a>
     </div>
-
     @hasrole('admin')
     <div class="sidebar-section">
         <div class="sidebar-label">Administração</div>
@@ -333,23 +312,23 @@ body.sidebar-collapsed .main-wrapper { margin-left: 60px; }
        class="sidebar-link {{ request()->routeIs('envio-emails') ? 'active' : '' }}">
         <i class="bi bi-envelope-paper"></i><span>Envio de E-mails</span>
     </a>
+        <a href="{{ route('whatsapp.config') }}" data-tooltip="Provedor de WhatsApp"
+           class="sidebar-link {{ request()->routeIs('whatsapp.config') ? 'active' : '' }}">
+            <i class="bi bi-whatsapp"></i><span>Provedor de WhatsApp</span>
+        </a>
     </div>
     @endhasrole
-
 </nav>
-
 <script>
 // ── Sidebar toggle ──────────────────────────────
 var sidebar  = document.getElementById('sidebar');
 var isMobile = window.innerWidth <= 768;
-
 // Restaura estado salvo via classe no body
 var savedState = localStorage.getItem('sidebar_collapsed');
 if (!isMobile && savedState === 'true') {
     sidebar.classList.add('collapsed');
     document.body.classList.add('sidebar-collapsed');
 }
-
 function updateToggleIcon() {
     var icon = document.getElementById('sidebarToggleIcon');
     if (!icon) return;
@@ -357,10 +336,8 @@ function updateToggleIcon() {
     icon.className = collapsed ? 'bi bi-chevron-double-right' : 'bi bi-chevron-double-left';
     document.getElementById('sidebarToggle').title = collapsed ? 'Expandir menu' : 'Recolher menu';
 }
-
 // Atualiza ícone no carregamento
 updateToggleIcon();
-
 document.getElementById('sidebarToggle').addEventListener('click', function() {
     if (window.innerWidth <= 768) {
         sidebar.classList.toggle('mobile-open');
@@ -373,12 +350,10 @@ document.getElementById('sidebarToggle').addEventListener('click', function() {
         updateToggleIcon();
     }
 });
-
 function closeSidebar() {
     sidebar.classList.remove('mobile-open');
     document.getElementById('sidebarOverlay').style.display = 'none';
 }
-
 // ── Submenu groups ──────────────────────────────
 function toggleGroup(el) {
     el.classList.toggle('open');
@@ -387,7 +362,6 @@ function toggleGroup(el) {
         sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
     }
 }
-
 // ── User dropdown ───────────────────────────────
 document.getElementById('userMenuToggle').addEventListener('click', function(e) {
     e.stopPropagation();
